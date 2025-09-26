@@ -4,15 +4,115 @@ const path = require('path');
 
 const app = express();
 
+// Runtime Strategy Configuration
+const AGENT_MODE = process.env.AGENT_MODE || 'mock'; // 'raindrop' | 'inkeep' | 'mock'
+const RAINDROP_API_URL = process.env.RAINDROP_API_URL || 'https://api.raindrop.ai';
+const INKEEP_MANAGE_API_URL = process.env.INKEEP_MANAGE_API_URL || 'http://localhost:3002';
+const INKEEP_RUN_API_URL = process.env.INKEEP_RUN_API_URL || 'http://localhost:3003';
+const AGENT_TIMEOUT = parseInt(process.env.AGENT_TIMEOUT) || 5000; // 5 second timeout
+
+console.log(`🤖 Agent Mode: ${AGENT_MODE.toUpperCase()}`);
+console.log(`📡 Raindrop API: ${RAINDROP_API_URL}`);
+console.log(`🔧 Inkeep APIs: ${INKEEP_MANAGE_API_URL} | ${INKEEP_RUN_API_URL}`);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Unified Agent I/O Schema
+const createDispatcherInput = (job) => ({
+  jobId: job.id,
+  category: job.category,
+  location: {
+    address: job.address,
+    lat: job.lat,
+    lng: job.lng,
+    neighborhood: job.address.split(',')[1]?.trim() || 'San Francisco'
+  },
+  budget: job.price,
+  urgency: job.urgency,
+  description: job.description,
+  analysis: job.analysis || {},
+  timestamp: new Date().toISOString()
+});
+
+const normalizeDispatcherOutput = (response, source) => ({
+  offers: response.offers || [],
+  events: response.events || [],
+  source: source, // 'raindrop' | 'inkeep' | 'mock'
+  success: true
+});
+
+// Agent API Helpers
+const callAgentWithTimeout = async (apiCall, timeoutMs = AGENT_TIMEOUT) => {
+  const timeoutPromise = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('Agent timeout')), timeoutMs)
+  );
+  
+  try {
+    return await Promise.race([apiCall, timeoutPromise]);
+  } catch (error) {
+    console.error('Agent call failed:', error.message);
+    return null;
+  }
+};
+
+// Triage Agent Integration
+const callTriageAgent = async (input) => {
+  if (AGENT_MODE === 'raindrop') {
+    return await callAgentWithTimeout(callRaindropTriage(input));
+  } else if (AGENT_MODE === 'inkeep') {
+    return await callAgentWithTimeout(callInkeepTriage(input));
+  }
+  return null;
+};
+
+const callRaindropTriage = async (input) => {
+  const response = await fetch(`${RAINDROP_API_URL}/triage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      context: input.context,
+      photoUrl: input.photoUrl,
+      category: input.category
+    })
+  });
+  
+  if (!response.ok) throw new Error(`Raindrop API error: ${response.status}`);
+  return await response.json();
+};
+
+const callInkeepTriage = async (input) => {
+  const response = await fetch(`${INKEEP_RUN_API_URL}/graphs/contractor-dispatcher-graph/runs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      input: {
+        message: `Analyze this ${input.category} issue: ${input.context}. Photo: ${input.photoUrl}`,
+        mode: 'triage'
+      }
+    })
+  });
+  
+  if (!response.ok) throw new Error(`Inkeep API error: ${response.status}`);
+  const result = await response.json();
+  
+  // Transform Inkeep response to our schema
+  return {
+    photo_insights: result.insights || [],
+    clarifying_questions: result.questions || [],
+    suspected_issue: result.diagnosis || 'Unknown issue',
+    confidence: result.confidence || 0.5,
+    source: 'inkeep'
+  };
+};
 
 // In-memory storage for jobs, drafts, offers, events, and bookings
 let drafts = [];
 let offers = [];
 let events = [];
 let bookings = [];
+let contractorAvailability = []; // New: contractor availability records
 let jobs = [
   {
     id: '1',
@@ -337,6 +437,88 @@ function addEvent(agent, action, jobId, details = {}, audience = 'both', convers
   return event;
 }
 
+// Real Dispatcher Agent Integration
+const callDispatcherAgent = async (job) => {
+  const input = createDispatcherInput(job);
+  
+  if (AGENT_MODE === 'raindrop') {
+    return await callAgentWithTimeout(callRaindropDispatcher(input));
+  } else if (AGENT_MODE === 'inkeep') {
+    return await callAgentWithTimeout(callInkeepDispatcher(input));
+  }
+  return null;
+};
+
+const callRaindropDispatcher = async (input) => {
+  const response = await fetch(`${RAINDROP_API_URL}/dispatch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      job: input,
+      availability: contractorAvailability,
+      mode: 'generate_offers'
+    })
+  });
+  
+  if (!response.ok) throw new Error(`Raindrop API error: ${response.status}`);
+  return await response.json();
+};
+
+const callInkeepDispatcher = async (input) => {
+  const response = await fetch(`${INKEEP_RUN_API_URL}/graphs/contractor-dispatcher-graph/runs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      input: {
+        job: input,
+        availability: contractorAvailability,
+        message: `Generate contractor offers for ${input.category} job in ${input.location.neighborhood}. Budget: $${input.budget}, Urgency: ${input.urgency}`
+      }
+    })
+  });
+  
+  if (!response.ok) throw new Error(`Inkeep API error: ${response.status}`);
+  const result = await response.json();
+  
+  // Transform Inkeep response to our schema
+  return normalizeDispatcherOutput({
+    offers: result.offers || [],
+    events: result.events || []
+  }, 'inkeep');
+};
+
+// Enhanced offer generation with real agent integration
+async function generateContractorOffersWithAgent(job) {
+  // Try real agent first
+  if (AGENT_MODE !== 'mock') {
+    try {
+      const agentResponse = await callDispatcherAgent(job);
+      if (agentResponse && agentResponse.offers && agentResponse.offers.length > 0) {
+        console.log(`✅ Dispatcher offers via ${AGENT_MODE.toUpperCase()}`);
+        
+        // Add agent badge to events
+        addEvent('System', 'dispatcher_mode', job.id, { mode: AGENT_MODE }, 'both', 
+          `📡 Dispatched via ${AGENT_MODE.charAt(0).toUpperCase() + AGENT_MODE.slice(1)}`);
+        
+        // Store offers
+        offers.push(...agentResponse.offers);
+        return agentResponse.offers;
+      } else {
+        throw new Error('Agent returned no offers');
+      }
+    } catch (error) {
+      console.log(`⚠️ Dispatcher agent failed, using fallback: ${error.message}`);
+      
+      // Add fallback badge to events
+      addEvent('System', 'dispatcher_fallback', job.id, { error: error.message }, 'both', 
+        `⚠️ Fallback to mock offers (${error.message})`);
+    }
+  }
+  
+  // Fallback to mock offers
+  return generateContractorOffers(job);
+}
+
 function generateContractorOffers(job) {
   const basePrice = job.price || 250;
   const category = job.category || 'Plumbing';
@@ -581,52 +763,77 @@ app.post('/api/analyze-image', (req, res) => {
   
   console.log(`🔍 Analyzing image for draft ${draftId}: ${context}`);
   
-  // Mock vision analysis based on context
+  // Real Triage Agent Integration with Fallback
   let analysis = {};
   
-  if (context.toLowerCase().includes('leak') || context.toLowerCase().includes('plumbing')) {
-    analysis = {
-      suspected_issue: 'P-trap leak',
-      confidence: 0.78,
-      photo_insights: [
-        '💧 Likely P-trap compression leak',
-        '🚰 No visible shutoff valve',
-        '💧 Pooling on cabinet floor',
-        '⚠️ Potential cabinet damage risk'
-      ],
-      possible_causes: ['loose compression nut', 'cracked P-trap', 'worn gasket'],
-      clarifying_questions: [
-        {
-          question: 'Is the drip constant or only when the sink runs?',
-          options: ['Constant dripping', 'Only when water runs', 'Intermittent']
-        },
-        {
-          question: 'Can you see moisture around the U-shaped pipe?',
-          options: ['Yes, around the compression nut', 'Yes, at pipe joints', 'No visible moisture']
-        },
-        {
-          question: 'Any water pooling on the cabinet floor?',
-          options: ['Yes, significant pooling', 'Small puddle', 'Just dampness', 'No pooling']
-        }
-      ],
-      common_fixes: [
-        {
-          name: 'Tighten compression nut with teflon tape',
-          time_min: 20,
-          parts: 'teflon tape ($2-5)',
-          est: [120, 180]
-        },
-        {
-          name: 'Replace P-trap (PVC)',
-          time_min: 40,
-          parts: 'P-trap assembly ($12-25)',
-          est: [200, 320]
-        }
-      ],
-      risk_notes: 'If ignored: cabinet damage, mold growth, higher repair costs',
-      local_price_band: 'Typical SF: $180–$350'
-    };
-  } else if (context.toLowerCase().includes('electrical')) {
+  // Try real agent first
+  if (AGENT_MODE !== 'mock') {
+    try {
+      const triageInput = {
+        context: context,
+        photoUrl: attachmentUrl,
+        category: context.toLowerCase().includes('plumbing') ? 'plumbing' : 
+                 context.toLowerCase().includes('electrical') ? 'electrical' : 'general'
+      };
+      
+      const agentResponse = await callTriageAgent(triageInput);
+      if (agentResponse) {
+        analysis = agentResponse;
+        console.log(`✅ Triage analysis via ${AGENT_MODE.toUpperCase()}`);
+      } else {
+        throw new Error('Agent returned null');
+      }
+    } catch (error) {
+      console.log(`⚠️ Triage agent failed, using fallback: ${error.message}`);
+    }
+  }
+  
+  // Fallback to mock analysis if agent failed or mode is mock
+  if (!analysis.photo_insights) {
+    if (context.toLowerCase().includes('leak') || context.toLowerCase().includes('plumbing')) {
+      analysis = {
+        suspected_issue: 'P-trap leak',
+        confidence: 0.78,
+        photo_insights: [
+          '💧 Likely P-trap compression leak',
+          '🚰 No visible shutoff valve', 
+          '💧 Pooling on cabinet floor',
+          '⚠️ Potential cabinet damage risk'
+        ],
+        possible_causes: ['loose compression nut', 'cracked P-trap', 'worn gasket'],
+        clarifying_questions: [
+          {
+            question: 'Is the drip constant or only when the sink runs?',
+            options: ['Constant dripping', 'Only when water runs', 'Intermittent']
+          },
+          {
+            question: 'Can you see moisture around the U-shaped pipe?',
+            options: ['Yes, around the compression nut', 'Yes, at pipe joints', 'No visible moisture']
+          },
+          {
+            question: 'Any water pooling on the cabinet floor?',
+            options: ['Yes, significant pooling', 'Small puddle', 'Just dampness', 'No pooling']
+          }
+        ],
+        common_fixes: [
+          {
+            name: 'Tighten compression nut with teflon tape',
+            time_min: 20,
+            parts: 'teflon tape ($2-5)',
+            est: [120, 180]
+          },
+          {
+            name: 'Replace P-trap (PVC)',
+            time_min: 40,
+            parts: 'P-trap assembly ($12-25)',
+            est: [200, 320]
+          }
+        ],
+        risk_notes: 'If ignored: cabinet damage, mold growth, higher repair costs',
+        local_price_band: 'Typical SF: $180–$350',
+        source: 'fallback'
+      };
+    } else if (context.toLowerCase().includes('electrical')) {
     analysis = {
       suspected_issue: 'Outlet not working',
       confidence: 0.65,
@@ -708,6 +915,76 @@ app.get('/api/contractor/:contractorId/feed', (req, res) => {
     success: true,
     events: contractorEvents.slice(0, limit),
     count: contractorEvents.length
+  });
+});
+
+// Contractor Availability System
+app.post('/api/contractor/:contractorId/availability', (req, res) => {
+  const { contractorId } = req.params;
+  const { location, skills, budgetMax, durationHours, notes } = req.body;
+  
+  // Remove existing availability for this contractor
+  contractorAvailability = contractorAvailability.filter(a => a.contractorId !== contractorId);
+  
+  // Add new availability
+  const availability = {
+    contractorId,
+    location: {
+      address: location.address,
+      lat: location.lat,
+      lng: location.lng,
+      neighborhood: location.neighborhood || location.address.split(',')[1]?.trim()
+    },
+    skills: skills || ['plumbing'],
+    budgetMax: budgetMax || 500,
+    radiusMeters: 5000, // 5km radius
+    untilIso: new Date(Date.now() + (durationHours || 4) * 60 * 60 * 1000).toISOString(),
+    notes: notes || '',
+    createdAt: new Date().toISOString()
+  };
+  
+  contractorAvailability.push(availability);
+  
+  // Add event to activity feed
+  addEvent('Contractor Agent', 'availability_updated', null, {
+    contractorId,
+    location: availability.location.neighborhood,
+    duration: `${durationHours}h`,
+    skills: skills.join(', '),
+    budget: `<$${budgetMax}`
+  }, 'both', `📍 Contractor availability updated: ${availability.location.neighborhood} · ${durationHours}h · ${skills.join(', ')} · <$${budgetMax}`);
+  
+  console.log(`📍 Contractor ${contractorId} availability set: ${availability.location.neighborhood}`);
+  
+  res.json({
+    success: true,
+    availability,
+    message: 'Availability updated successfully'
+  });
+});
+
+app.delete('/api/contractor/:contractorId/availability', (req, res) => {
+  const { contractorId } = req.params;
+  
+  contractorAvailability = contractorAvailability.filter(a => a.contractorId !== contractorId);
+  
+  addEvent('Contractor Agent', 'availability_cleared', null, {
+    contractorId
+  }, 'both', `📍 Contractor availability cleared`);
+  
+  res.json({
+    success: true,
+    message: 'Availability cleared'
+  });
+});
+
+app.get('/api/contractor/:contractorId/availability', (req, res) => {
+  const { contractorId } = req.params;
+  const availability = contractorAvailability.find(a => a.contractorId === contractorId);
+  
+  res.json({
+    success: true,
+    availability: availability || null
   });
 });
 
@@ -880,12 +1157,12 @@ app.post('/api/drafts/:id/publish', (req, res) => {
   }, 'homeowner', `💬 "My ${newJob.category.toLowerCase()} needs fixing in ${newJob.address.split(',')[1].trim()}! Budget around $${newJob.price}."`);
   
   // 2. Dispatcher Agent receives and broadcasts
-  setTimeout(() => {
+  setTimeout(async () => {
     addEvent('Dispatcher Agent', 'sent RFO', jobId, { contractors: 3 }, 'both', 
       `💬 "Got it! I'll reach out to available ${newJob.category.toLowerCase()} contractors nearby."`);
     
-    // 3. Generate offers with natural conversation
-    const jobOffers = generateContractorOffers(newJob);
+    // 3. Generate offers with natural conversation (using real agents when available)
+    const jobOffers = await generateContractorOffersWithAgent(newJob);
     
     // Individual contractor responses
     setTimeout(() => {
