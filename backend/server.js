@@ -83,26 +83,56 @@ const callRaindropTriage = async (input) => {
 };
 
 const callInkeepTriage = async (input) => {
-  const response = await fetch(`${INKEEP_RUN_API_URL}/graphs/contractor-dispatcher-graph/runs`, {
+  const response = await fetch(`${INKEEP_RUN_API_URL}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      input: {
-        message: `Analyze this ${input.category} issue: ${input.context}. Photo: ${input.photoUrl}`,
-        mode: 'triage'
-      }
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a professional contractor triage agent. Analyze home repair issues and provide specific insights, clarifying questions, and diagnosis. Respond in JSON format.'
+        },
+        {
+          role: 'user',
+          content: `Analyze this ${input.category} issue: ${input.context}. Photo URL: ${input.photoUrl}. 
+          
+          Please provide:
+          1. photo_insights: Array of 3-4 specific observations about what you see
+          2. clarifying_questions: Array of 2-3 questions with multiple choice options
+          3. suspected_issue: Brief diagnosis
+          4. confidence: Number between 0-1
+          
+          Format as JSON.`
+        }
+      ]
     })
   });
   
-  if (!response.ok) throw new Error(`Inkeep API error: ${response.status}`);
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Inkeep API error: ${response.status} - ${errorText}`);
+  }
+  
   const result = await response.json();
   
-  // Transform Inkeep response to our schema
+  // Try to parse JSON from the response content
+  let parsedContent;
+  try {
+    parsedContent = JSON.parse(result.content || result.message || '{}');
+  } catch (e) {
+    // Fallback if response isn't JSON
+    parsedContent = {
+      photo_insights: [`AI Analysis: ${result.content || result.message || 'Issue detected'}`],
+      clarifying_questions: [
+        { question: 'What is the severity?', options: ['Minor', 'Moderate', 'Severe'] }
+      ],
+      suspected_issue: input.category + ' issue',
+      confidence: 0.7
+    };
+  }
+  
   return {
-    photo_insights: result.insights || [],
-    clarifying_questions: result.questions || [],
-    suspected_issue: result.diagnosis || 'Unknown issue',
-    confidence: result.confidence || 0.5,
+    ...parsedContent,
     source: 'inkeep'
   };
 };
@@ -465,26 +495,80 @@ const callRaindropDispatcher = async (input) => {
 };
 
 const callInkeepDispatcher = async (input) => {
-  const response = await fetch(`${INKEEP_RUN_API_URL}/graphs/contractor-dispatcher-graph/runs`, {
+  const response = await fetch(`${INKEEP_RUN_API_URL}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      input: {
-        job: input,
-        availability: contractorAvailability,
-        message: `Generate contractor offers for ${input.category} job in ${input.location.neighborhood}. Budget: $${input.budget}, Urgency: ${input.urgency}`
-      }
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a professional contractor dispatcher. Generate realistic contractor offers for home repair jobs. Respond in JSON format with an array of offers.'
+        },
+        {
+          role: 'user',
+          content: `Generate 2-3 contractor offers for this job:
+          - Category: ${input.category}
+          - Location: ${input.location.neighborhood}
+          - Budget: $${input.budget}
+          - Urgency: ${input.urgency}
+          - Description: ${input.description}
+          
+          Available contractors: ${JSON.stringify(contractorAvailability)}
+          
+          Please provide JSON with:
+          {
+            "offers": [
+              {
+                "id": "unique-id",
+                "jobId": "${input.jobId}",
+                "contractorId": "contractor-id",
+                "contractorName": "Company Name",
+                "price": 250,
+                "eta": "1 hour",
+                "etaMinutes": 60,
+                "rating": 4.8,
+                "note": "Brief description",
+                "type": "fast|budget"
+              }
+            ]
+          }`
+        }
+      ]
     })
   });
   
-  if (!response.ok) throw new Error(`Inkeep API error: ${response.status}`);
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Inkeep API error: ${response.status} - ${errorText}`);
+  }
+  
   const result = await response.json();
   
-  // Transform Inkeep response to our schema
-  return normalizeDispatcherOutput({
-    offers: result.offers || [],
-    events: result.events || []
-  }, 'inkeep');
+  // Try to parse JSON from the response content
+  let parsedContent;
+  try {
+    parsedContent = JSON.parse(result.content || result.message || '{}');
+  } catch (e) {
+    // Fallback if response isn't JSON - generate mock offers
+    parsedContent = {
+      offers: [
+        {
+          id: `inkeep-offer-${Date.now()}-1`,
+          jobId: input.jobId,
+          contractorId: 'inkeep-contractor-1',
+          contractorName: `AI ${input.category} Pro`,
+          price: Math.round(input.budget * 1.1),
+          eta: '1 hour',
+          etaMinutes: 60,
+          rating: 4.7,
+          note: 'AI-generated offer',
+          type: 'fast'
+        }
+      ]
+    };
+  }
+  
+  return normalizeDispatcherOutput(parsedContent, 'inkeep');
 };
 
 // Enhanced offer generation with real agent integration
