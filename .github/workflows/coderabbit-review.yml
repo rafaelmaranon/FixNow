@@ -43,6 +43,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           # Optional: CodeRabbit API key for enhanced features
           # coderabbit-token: ${{ secrets.CODERABBIT_TOKEN }}
+          config-path: .coderabbit.yml
           
       - name: Generate Code Quality Report
         run: |

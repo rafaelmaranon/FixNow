@@ -1,0 +1,90 @@
+# Minimal, hackathon-friendly CodeRabbit config for FixNow
+version: 1
+
+project:
+  name: FixNow
+  monorepo: true
+  # Tell the reviewer where our important code lives
+  include:
+    - backend/**       # Express/Lambda orchestrator
+    - frontend/**      # Frontend React
+    - src/**           # Inkeep agents
+    - scripts/**       # Quality analysis
+
+review:
+  # Fail the check if any of these are raised
+  block_on:
+    - secrets_exposed
+    - security_high
+    - build_errors
+    - tests_failing
+    - schema_breaking_change
+
+  # Core focus areas for this project
+  focus:
+    - title: "Multi-Agent Event Integrity"
+      guidelines: |
+        Ensure every emitted event includes: type, jobId, actor, audience (homeowner|contractor|both),
+        and contractorId when relevant. Check that events are appended via a single utility (addEvent)
+        and polled by both views. Flag missing audience/contractorId or branches that skip addEvent.
+    - title: "API Contract Consistency"
+      guidelines: |
+        Validate shared types (Job, Offer, Booking, EventLog) are updated together across
+        backend/server.js, and frontend consumers. If a field is added/renamed,
+        require corresponding changes in API handlers and UI rendering. Flag mismatched field names
+        and unchecked `any` casts.
+    - title: "Async Safety (Race Conditions)"
+      guidelines: |
+        Look for async flows where Publish -> RFO -> Offer -> Select -> Award can double-emit or
+        miss transitions. Flag non-atomic updates, multiple awaits without guarding job.status,
+        and missing idempotency on /select.
+    - title: "Security & Secrets"
+      guidelines: |
+        Block if keys/tokens/URLs are committed. Check CORS, rate limits on public endpoints,
+        and that only contractor-visible summaries are sent to contractor feeds.
+    - title: "UI Wiring / Demo Reliability"
+      guidelines: |
+        Confirm Publish button calls /drafts/:id/publish; /events and /jobs are polled;
+        selecting an option returns Booking {arrivalByIso,...} and the UI shows Assigned + countdown.
+
+checks:
+  secrets_exposed:
+    enabled: true
+    detect:
+      - OPENAI|CLAUDE|ANTHROPIC|RAINDROP|AWS|API.*KEY
+      - (?i)sk-[a-z0-9_-]{20,}
+      - (?i)aws_access_key_id|aws_secret_access_key
+  dependency_changes:
+    enabled: true
+    alert_on:
+      - known_vulnerabilities
+      - postinstall_scripts
+      - new_bin_scripts
+  typescript:
+    enabled: true
+    strict: true
+    fail_on:
+      - implicit_any
+      - unreachable_code
+      - missing_return_types
+  tests:
+    enabled: true
+    command: "npm test --workspaces --silent"
+    required: false     # keep optional for hackathon speed
+  build:
+    enabled: true
+    command: "npm run build || true"
+
+rules:
+  - id: event-must-have-audience
+    pattern: "addEvent\\({[^}]*}\\)"
+    message: "Events must include `audience` ('homeowner'|'contractor'|'both') and `actor`."
+    severity: warning
+  - id: offer-award-atomic
+    message: "Make /select idempotent; set job.status='assigned' and chosen.status='awarded' atomically."
+    scope: backend/server.js
+
+report:
+  summary: true
+  inline_comments: true
+  require_acknowledge: false
