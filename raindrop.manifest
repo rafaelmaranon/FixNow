@@ -1,0 +1,5 @@
+application "contractor-dispatcher" {
+  bucket "contractor-jobs" {
+    
+  }
+}

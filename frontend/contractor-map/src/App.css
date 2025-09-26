@@ -1,0 +1,496 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.App {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.app-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  z-index: 1000;
+  position: relative;
+}
+
+/* Role Switcher */
+.role-switcher {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.switch-container {
+  display: flex;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 25px;
+  padding: 0.25rem;
+  backdrop-filter: blur(10px);
+}
+
+.role-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.role-btn.active {
+  background: white;
+  color: #667eea;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+.role-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.app-header h1 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(45deg, #fff, #f0f0f0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.tagline {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  font-style: italic;
+  margin: 0;
+}
+
+.inkeep-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+.badge-text {
+  font-style: italic;
+}
+
+.inkeep-logo {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-style: normal;
+}
+
+.header-stats {
+  display: flex;
+  gap: 2rem;
+}
+
+.stat {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.ai-stat {
+  background: rgba(46, 213, 115, 0.3);
+  border: 1px solid rgba(46, 213, 115, 0.5);
+  animation: pulse-ai 3s infinite;
+}
+
+@keyframes pulse-ai {
+  0%, 100% { 
+    background: rgba(46, 213, 115, 0.3);
+    border-color: rgba(46, 213, 115, 0.5);
+  }
+  50% { 
+    background: rgba(46, 213, 115, 0.5);
+    border-color: rgba(46, 213, 115, 0.8);
+  }
+}
+
+.app-main {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Main Layout */
+.main-layout {
+  display: flex;
+  height: 100%;
+}
+
+.left-panel {
+  width: 400px;
+  background: white;
+  border-right: 1px solid #e9ecef;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.right-panel {
+  flex: 1;
+  position: relative;
+}
+
+.map-container {
+  height: 100%;
+  position: relative;
+}
+
+.map-placeholder {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  color: #666;
+}
+
+.map-placeholder h3 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+/* Contractor List */
+.contractor-list h2,
+.job-list h2 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.contractor-card,
+.job-card {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.contractor-card:hover,
+.job-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  transform: translateY(-1px);
+}
+
+.contractor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.contractor-info h3,
+.job-info h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.1rem;
+  font-weight: 600;
+  flex: 1;
+}
+
+.source-badge {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.summary {
+  color: #666;
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0.75rem 0;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.category {
+  color: #667eea;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin: 0 0 0.75rem 0;
+}
+
+.description {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.4;
+}
+
+.contractor-details,
+.job-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+}
+
+.contractor-details span,
+.job-details span {
+  background: #f8f9fa;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  color: #666;
+  font-weight: 500;
+}
+
+.rating {
+  background: #fff3cd !important;
+  color: #856404 !important;
+}
+
+.eta {
+  background: #d1ecf1 !important;
+  color: #0c5460 !important;
+}
+
+.price {
+  background: #d4edda !important;
+  color: #155724 !important;
+}
+
+.distance {
+  background: #f8d7da !important;
+  color: #721c24 !important;
+}
+
+.urgency {
+  font-weight: 600 !important;
+}
+
+.urgency.emergency {
+  background: #ff4757 !important;
+  color: white !important;
+}
+
+.urgency.high {
+  background: #ff6b6b !important;
+  color: white !important;
+}
+
+.urgency.medium {
+  background: #ffa502 !important;
+  color: white !important;
+}
+
+.urgency.low {
+  background: #2ed573 !important;
+  color: white !important;
+}
+
+.address {
+  background: #e2e3e5 !important;
+  color: #383d41 !important;
+}
+
+/* Contractor Actions */
+.contractor-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.craigslist-btn,
+.contact-btn {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.craigslist-btn {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  color: white;
+}
+
+.craigslist-btn:hover {
+  background: linear-gradient(135deg, #ff5252, #e53e3e);
+  transform: translateY(-1px);
+}
+
+.contact-btn {
+  background: #667eea;
+  color: white;
+}
+
+.contact-btn:hover {
+  background: #5a6fd8;
+  transform: translateY(-1px);
+}
+
+/* Job Notification */
+.job-notification {
+  position: fixed;
+  top: 100px;
+  right: 2rem;
+  background: linear-gradient(135deg, #2ed573, #26d065);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(46, 213, 115, 0.4);
+  z-index: 1000;
+  font-weight: 600;
+  animation: slideInRight 0.5s ease, fadeOut 0.5s ease 2.5s forwards;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.homeowner-button {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(238, 90, 36, 0.4);
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.homeowner-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(238, 90, 36, 0.6);
+}
+
+.homeowner-button:active {
+  transform: translateY(0);
+}
+
+/* Loading and Error States */
+.loading-container, .error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 1rem;
+  color: #666;
+}
+
+.loading-spinner {
+  font-size: 3rem;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-message {
+  font-size: 1.2rem;
+  color: #ff6b6b;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.retry-button {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 1rem;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .header-stats {
+    gap: 1rem;
+  }
+  
+  .homeowner-button {
+    bottom: 1rem;
+    right: 1rem;
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+  }
+}

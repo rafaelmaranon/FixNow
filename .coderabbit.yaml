@@ -1,0 +1,112 @@
+# CodeRabbit Configuration for FixNow Multi-Agent Collaboration System
+# AI-powered code reviews for hackathon-quality code
+
+# Review settings
+reviews:
+  # Focus on production readiness for hackathon demo
+  profile: "thorough"
+  
+  # Key areas to focus on for multi-agent system
+  focus_areas:
+    - "security"
+    - "performance" 
+    - "maintainability"
+    - "best_practices"
+    - "error_handling"
+    - "type_safety"
+  
+  # Auto-review settings
+  auto_review:
+    enabled: true
+    # Review all changes to critical components
+    paths:
+      - "frontend/contractor-map/src/components/**"
+      - "backend/server.js"
+      - "craigslist-service/**"
+    
+  # Skip review for generated/config files
+  exclude_paths:
+    - "node_modules/**"
+    - "build/**"
+    - "dist/**"
+    - "*.log"
+    - "package-lock.json"
+
+# Language-specific settings
+languages:
+  typescript:
+    # Strict TypeScript checking for React components
+    rules:
+      - "prefer-const"
+      - "no-unused-vars"
+      - "explicit-return-types"
+      - "strict-null-checks"
+  
+  javascript:
+    # Node.js backend best practices
+    rules:
+      - "no-console-in-production"
+      - "async-await-best-practices"
+      - "error-handling"
+      - "security-vulnerabilities"
+
+# Multi-agent system specific checks
+custom_rules:
+  # Agent coordination patterns
+  - name: "agent-communication"
+    description: "Ensure proper agent communication patterns"
+    pattern: "addEvent|generateContractorOffers|handleAcceptOffer"
+    
+  # API endpoint security
+  - name: "api-security" 
+    description: "Check API endpoints for security issues"
+    pattern: "app\\.(get|post|put|delete)"
+    
+  # React component best practices
+  - name: "react-hooks"
+    description: "Ensure proper React hooks usage"
+    pattern: "useState|useEffect|useRef"
+
+# Comments and suggestions
+suggestions:
+  # Prioritize hackathon demo stability
+  priority_levels:
+    - "critical"    # Security, crashes, demo-breaking issues
+    - "high"        # Performance, UX issues
+    - "medium"      # Code quality, maintainability
+    - "low"         # Style, minor optimizations
+  
+  # Focus on demo-critical components
+  critical_components:
+    - "VoiceAgent.tsx"
+    - "AgentTicker.tsx" 
+    - "BookingBanner.tsx"
+    - "server.js"
+    - "App.tsx"
+
+# Integration settings
+integrations:
+  # GitHub integration (if pushing to GitHub)
+  github:
+    enabled: true
+    auto_merge_approved: false  # Manual review for hackathon
+    
+  # Slack notifications (optional)
+  slack:
+    enabled: false
+    
+# Reporting
+reports:
+  # Generate code quality report for judges
+  quality_report:
+    enabled: true
+    include_metrics:
+      - "code_coverage"
+      - "complexity_score"
+      - "security_score"
+      - "maintainability_index"
+      
+  # Export format for presentation
+  export_formats:
+    - "markdown"
+    - "json"

@@ -1,0 +1,18 @@
+{
+  "name": "craigslist-contractors",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Craigslist contractor RSS feed service",
+  "main": "cl_contractors_sf.js",
+  "scripts": {
+    "start": "node cl_contractors_sf.js",
+    "dev": "node cl_contractors_sf.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "fast-xml-parser": "^4.3.2",
+    "node-fetch": "^3.3.2",
+    "p-limit": "^7.1.1"
+  }
+}

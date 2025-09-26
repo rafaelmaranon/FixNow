@@ -1,0 +1,158 @@
+.booking-banner {
+  background: linear-gradient(135deg, #2ed573, #26d065);
+  color: white;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 16px rgba(46, 213, 115, 0.3);
+  animation: slideInDown 0.5s ease;
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.booking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.booking-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-icon {
+  font-size: 1.2rem;
+}
+
+.status-text {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.booking-contractor {
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-align: right;
+}
+
+.booking-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.arrival-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.countdown {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.countdown-label {
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.countdown-time {
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+}
+
+.arrival-time {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.booking-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: right;
+}
+
+.price {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.eta {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.booking-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.contact-btn,
+.details-btn {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.contact-btn:hover,
+.details-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.contact-btn {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.details-btn {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .booking-banner {
+    padding: 0.75rem;
+  }
+  
+  .booking-details {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+  
+  .booking-meta {
+    text-align: left;
+  }
+  
+  .countdown-time {
+    font-size: 1.1rem;
+  }
+}
