@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import MapView from './components/MapView';
 import VoiceAgent from './components/VoiceAgent';
+import ContractorAgentPanel from './components/ContractorAgentPanel';
 import NeighborhoodFilter from './components/NeighborhoodFilter';
 import AgentTicker from './components/AgentTicker';
 import { Job } from './data/mockJobs';
@@ -21,6 +22,7 @@ function App() {
   const [newJobNotification, setNewJobNotification] = useState<string | null>(null);
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('all');
   const [filterMode, setFilterMode] = useState<'strict' | 'loose'>('strict');
+  const [contractorId] = useState<string>('contractor-fast'); // Fixed contractor ID for demo
 
   // Fetch jobs from API
   const fetchJobs = async () => {
@@ -202,14 +204,20 @@ function App() {
               </div>
             )}
             
-            {/* Left Panel - Voice Agent + List */}
+            {/* Left Panel - Different for each role */}
             <div className="left-panel">
-              <VoiceAgent 
-                userRole={userRole}
-                onVoiceCommand={handleVoiceCommand}
-                onPhotoUpload={handlePhotoUpload}
-                onJobPublished={handleJobPublished}
-              />
+              {userRole === 'homeowner' ? (
+                <>
+                  <VoiceAgent 
+                    userRole={userRole}
+                    onVoiceCommand={handleVoiceCommand}
+                    onPhotoUpload={handlePhotoUpload}
+                    onJobPublished={handleJobPublished}
+                  />
+                </>
+              ) : (
+                <ContractorAgentPanel contractorId={contractorId} />
+              )}
               
               {userRole === 'homeowner' ? (
                 <div className="contractor-list">
@@ -312,7 +320,10 @@ function App() {
       </main>
       
       {/* Multi-Agent Activity Ticker */}
-      <AgentTicker />
+      <AgentTicker 
+        userRole={userRole}
+        contractorId={userRole === 'contractor' ? contractorId : undefined}
+      />
     </div>
   );
 }
