@@ -49,25 +49,32 @@ const AgentTicker: React.FC<AgentTickerProps> = ({ userRole = 'homeowner', contr
         setEvents(data.events || []);
       }
     } catch (error) {
-      console.error('Failed to fetch events:', error);
     }
   };
 
   const getAgentIcon = (agent: string) => {
     switch (agent) {
-      case 'Homeowner Agent': return '🏠';
-      case 'Dispatcher Agent': return '📋';
-      case 'Contractor Agent': return '👷';
-      default: return '🤖';
+      case 'Homeowner Agent':
+        return '🏠';
+      case 'Dispatcher Agent':
+        return '📋';
+      case 'Contractor Agent':
+        return '👷';
+      default:
+        return '🤖';
     }
   };
 
   const getAgentColor = (agent: string) => {
     switch (agent) {
-      case 'Homeowner Agent': return '#667eea';
-      case 'Dispatcher Agent': return '#f093fb';
-      case 'Contractor Agent': return '#4facfe';
-      default: return '#a8edea';
+      case 'Homeowner Agent':
+        return '#4facfe'; // Blue
+      case 'Dispatcher Agent':
+        return '#764ba2'; // Purple
+      case 'Contractor Agent':
+        return '#ffa502'; // Orange
+      default:
+        return '#a4b0be'; // Gray
     }
   };
 
@@ -116,38 +123,31 @@ const AgentTicker: React.FC<AgentTickerProps> = ({ userRole = 'homeowner', contr
             <span>🔄 Waiting for agent activity...</span>
           </div>
         ) : (
-          events.map((event, index) => (
-            <div 
-              key={event.id} 
-              className={`ticker-event ${index === 0 ? 'latest' : ''}`}
-              style={{ '--agent-color': getAgentColor(event.agent) } as React.CSSProperties}
-            >
-              <div className="event-agent">
-                <span className="agent-icon">{getAgentIcon(event.agent)}</span>
-                <span className="agent-name">{event.agent}</span>
+          events.map((agentEvent, index) => (
+            <div key={agentEvent.id} className="event-item">
+              <div 
+                className="event-icon"
+                style={{ backgroundColor: getAgentColor(agentEvent.agent) }}
+              >
+                {getAgentIcon(agentEvent.agent)}
               </div>
-              
               <div className="event-content">
-                <div className="event-message">{event.message}</div>
-                {event.details && Object.keys(event.details).length > 0 && (
-                  <div className="event-details">
-                    {event.details.price && (
-                      <span className="detail-item">💰 ${event.details.price}</span>
-                    )}
-                    {event.details.contractor && (
-                      <span className="detail-item">👷 {event.details.contractor}</span>
-                    )}
-                    {event.details.eta && (
-                      <span className="detail-item">⏱️ {event.details.eta}</span>
-                    )}
-                    {event.details.count && (
-                      <span className="detail-item">📊 {event.details.count} offers</span>
-                    )}
+                <div className="event-header">
+                  <span className="agent-name" style={{ color: getAgentColor(agentEvent.agent) }}>
+                    {agentEvent.agent}
+                  </span>
+                  <span className="event-time">{formatTime(agentEvent.timestamp)}</span>
+                </div>
+                <div className="event-message">
+                  {agentEvent.message}
+                </div>
+                {agentEvent.details && agentEvent.details.price && (
+                  <div className="event-price">
+                    💰 ${agentEvent.details.price}
+                    {agentEvent.details.eta && ` • ⏱️ ${agentEvent.details.eta}`}
                   </div>
                 )}
               </div>
-              
-              <div className="event-time">{formatTime(event.timestamp)}</div>
             </div>
           ))
         )}

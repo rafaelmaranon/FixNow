@@ -315,8 +315,8 @@ const generateCoordinates = (address) => {
   return { lat, lng };
 };
 
-// Agent collaboration helpers with audience support
-function addEvent(agent, action, jobId, details = {}, audience = 'both') {
+// Agent collaboration helpers with natural conversation support
+function addEvent(agent, action, jobId, details = {}, audience = 'both', conversationMessage = null) {
   const event = {
     id: `event-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     timestamp: new Date().toISOString(),
@@ -326,7 +326,8 @@ function addEvent(agent, action, jobId, details = {}, audience = 'both') {
     details,
     audience, // 'homeowner' | 'contractor' | 'both'
     contractorId: details.contractorId || null,
-    message: `${agent} ${action}${jobId ? ` for Job #${jobId}` : ''}`
+    message: conversationMessage || `${agent} ${action}${jobId ? ` for Job #${jobId}` : ''}`,
+    conversationStyle: !!conversationMessage // Flag for natural vs system message
   };
   
   events.unshift(event); // Add to beginning
@@ -587,7 +588,27 @@ app.post('/api/analyze-image', (req, res) => {
     analysis = {
       suspected_issue: 'P-trap leak',
       confidence: 0.78,
+      photo_insights: [
+        '💧 Likely P-trap compression leak',
+        '🚰 No visible shutoff valve',
+        '💧 Pooling on cabinet floor',
+        '⚠️ Potential cabinet damage risk'
+      ],
       possible_causes: ['loose compression nut', 'cracked P-trap', 'worn gasket'],
+      clarifying_questions: [
+        {
+          question: 'Is the drip constant or only when the sink runs?',
+          options: ['Constant dripping', 'Only when water runs', 'Intermittent']
+        },
+        {
+          question: 'Can you see moisture around the U-shaped pipe?',
+          options: ['Yes, around the compression nut', 'Yes, at pipe joints', 'No visible moisture']
+        },
+        {
+          question: 'Any water pooling on the cabinet floor?',
+          options: ['Yes, significant pooling', 'Small puddle', 'Just dampness', 'No pooling']
+        }
+      ],
       common_fixes: [
         {
           name: 'Tighten compression nut with teflon tape',
@@ -603,12 +624,7 @@ app.post('/api/analyze-image', (req, res) => {
         }
       ],
       risk_notes: 'If ignored: cabinet damage, mold growth, higher repair costs',
-      local_price_band: 'Typical SF: $180–$350',
-      questions: [
-        'Is the drip constant or only when the sink runs?',
-        'Can you see moisture around the compression nut?',
-        'Any water pooling on the cabinet floor?'
-      ]
+      local_price_band: 'Typical SF: $180–$350'
     };
   } else if (context.toLowerCase().includes('electrical')) {
     analysis = {
@@ -752,12 +768,12 @@ app.post('/api/offers/:id/accept', (req, res) => {
     job.bookingId = booking.id;
   }
   
-  // Add events for the acceptance flow
+  // Add events for the acceptance flow - Natural Conversation
   addEvent('Homeowner Agent', 'selected offer', offer.jobId, { 
     contractor: offer.contractorName, 
     price: offer.price, 
     eta: offer.eta 
-  }, 'homeowner');
+  }, 'homeowner', `💬 "Perfect! Let's go with ${offer.contractorName} for $${offer.price}."`);
   
   setTimeout(() => {
     const arrivalTime = arrival.toLocaleTimeString('en-US', { 
@@ -770,10 +786,18 @@ app.post('/api/offers/:id/accept', (req, res) => {
       contractor: offer.contractorName,
       eta: `~${etaMin} min`,
       arrivalBy: arrivalTime,
-      contractorId: offer.contractorId,
-      message: `Job awarded to ${offer.contractorName} — ETA ~${etaMin} min, arriving by ${arrivalTime}`
-    }, 'contractor');
-  }, 500);
+      contractorId: offer.contractorId
+    }, 'both', `💬 "Done! Awarded to ${offer.contractorName}. ETA ${etaMin} minutes. 🕑"`);
+    
+    // Contractor confirmation
+    setTimeout(() => {
+      addEvent('Contractor Agent', 'confirmed booking', offer.jobId, {
+        contractorName: offer.contractorName,
+        contractorId: offer.contractorId,
+        arrivalBy: arrivalTime
+      }, 'both', `💬 "${offer.contractorName}: Confirmed! I'll head out now. 👍"`);
+    }, 800);
+  }, 1200);
   
   res.json({
     success: true,
@@ -848,28 +872,44 @@ app.post('/api/drafts/:id/publish', (req, res) => {
   
   jobs.push(newJob);
   
-  // Multi-Agent Collaboration Flow
+  // Multi-Agent Collaboration Flow - Natural Conversation Style
   // 1. Homeowner Agent publishes job
-  addEvent('Homeowner Agent', 'published job', jobId, { category: newJob.category, price: newJob.price }, 'homeowner');
+  addEvent('Homeowner Agent', 'published job', jobId, { 
+    category: newJob.category, 
+    price: newJob.price 
+  }, 'homeowner', `💬 "My ${newJob.category.toLowerCase()} needs fixing in ${newJob.address.split(',')[1].trim()}! Budget around $${newJob.price}."`);
   
   // 2. Dispatcher Agent receives and broadcasts
   setTimeout(() => {
-    addEvent('Dispatcher Agent', 'sent RFO (Request for Offers)', jobId, { contractors: 2 }, 'both');
+    addEvent('Dispatcher Agent', 'sent RFO', jobId, { contractors: 3 }, 'both', 
+      `💬 "Got it! I'll reach out to available ${newJob.category.toLowerCase()} contractors nearby."`);
     
-    // 3. Contractor Agents respond with offers
+    // 3. Generate offers with natural conversation
     const jobOffers = generateContractorOffers(newJob);
-    addEvent('Contractor Agent', 'generated offers', jobId, { 
-      count: jobOffers.length,
-      contractorId: 'contractor-fast'
-    }, 'contractor');
     
-    // 4. Dispatcher Agent collects offers
+    // Individual contractor responses
     setTimeout(() => {
-      addEvent('Dispatcher Agent', 'collected offers', jobId, { 
-        offers: jobOffers.map(o => ({ contractor: o.contractorName, price: o.price, eta: o.eta }))
-      }, 'both');
+      jobOffers.forEach((offer, index) => {
+        setTimeout(() => {
+          const contractorPersonality = offer.type === 'fast' ? 'Quick' : 'Budget';
+          addEvent('Contractor Agent', 'submitted offer', jobId, {
+            contractorName: offer.contractorName,
+            price: offer.price,
+            eta: offer.eta,
+            contractorId: offer.contractorId
+          }, 'both', `💬 "${contractorPersonality}: I can take it for $${offer.price}. ETA ${offer.eta}."`);
+        }, index * 800); // Stagger responses
+      });
+      
+      // 4. Dispatcher Agent presents options
+      setTimeout(() => {
+        const optionsText = jobOffers.map((o, i) => `${i+1}️⃣ $${o.price} / ${o.eta}`).join('\n');
+        addEvent('Dispatcher Agent', 'presented options', jobId, { 
+          offers: jobOffers.map(o => ({ contractor: o.contractorName, price: o.price, eta: o.eta }))
+        }, 'homeowner', `💬 "Here are your options:\n${optionsText}\nWhich works best for you?"`);
+      }, jobOffers.length * 800 + 500);
     }, 1000);
-  }, 500);
+  }, 1000);
   
   // Remove draft after publishing
   const draftIndex = drafts.findIndex(d => d.id === req.params.id);
