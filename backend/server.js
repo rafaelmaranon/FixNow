@@ -842,7 +842,7 @@ app.patch('/api/drafts/:id', (req, res) => {
 });
 
 // Image analysis endpoint
-app.post('/api/analyze-image', (req, res) => {
+app.post('/api/analyze-image', async (req, res) => {
   const { draftId, imageUrl, context } = req.body;
   
   console.log(`🔍 Analyzing image for draft ${draftId}: ${context}`);
