@@ -918,32 +918,33 @@ app.post('/api/analyze-image', async (req, res) => {
         source: 'fallback'
       };
     } else if (context.toLowerCase().includes('electrical')) {
-    analysis = {
-      suspected_issue: 'Outlet not working',
-      confidence: 0.65,
-      possible_causes: ['tripped GFCI', 'loose wiring', 'faulty outlet'],
-      common_fixes: [
-        {
-          name: 'Reset GFCI outlet',
-          time_min: 5,
-          parts: 'none',
-          est: [80, 120]
-        },
-        {
-          name: 'Replace outlet',
-          time_min: 30,
-          parts: 'GFCI outlet ($15-35)',
-          est: [150, 250]
-        }
-      ],
-      risk_notes: 'Safety concern: electrical hazard if DIY attempted',
-      local_price_band: 'Typical SF: $120–$280',
-      questions: [
-        'Did you try pressing the reset button?',
-        'Are other outlets in the room working?',
-        'When did it stop working?'
-      ]
-    };
+      analysis = {
+        suspected_issue: 'Outlet not working',
+        confidence: 0.65,
+        possible_causes: ['tripped GFCI', 'loose wiring', 'faulty outlet'],
+        common_fixes: [
+          {
+            name: 'Reset GFCI outlet',
+            time_min: 5,
+            parts: 'none',
+            est: [80, 120]
+          },
+          {
+            name: 'Replace outlet',
+            time_min: 30,
+            parts: 'GFCI outlet ($15-35)',
+            est: [150, 250]
+          }
+        ],
+        risk_notes: 'Safety concern: electrical hazard if DIY attempted',
+        local_price_band: 'Typical SF: $120–$280',
+        questions: [
+          'Did you try pressing the reset button?',
+          'Are other outlets in the room working?',
+          'When did it stop working?'
+        ]
+      };
+    }
   }
   
   // Update the draft with analysis
