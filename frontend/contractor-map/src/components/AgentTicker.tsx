@@ -9,9 +9,16 @@ interface AgentEvent {
   jobId?: string;
   message: string;
   details: any;
+  audience?: 'homeowner' | 'contractor' | 'both';
+  contractorId?: string;
 }
 
-const AgentTicker: React.FC = () => {
+interface AgentTickerProps {
+  userRole?: 'homeowner' | 'contractor';
+  contractorId?: string;
+}
+
+const AgentTicker: React.FC<AgentTickerProps> = ({ userRole = 'homeowner', contractorId }) => {
   const [events, setEvents] = useState<AgentEvent[]>([]);
   const [isVisible, setIsVisible] = useState(true);
 
@@ -23,11 +30,20 @@ const AgentTicker: React.FC = () => {
     const interval = setInterval(fetchEvents, 2000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [userRole, contractorId]);
 
   const fetchEvents = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/events?limit=10');
+      let url = 'http://localhost:3001/api/events?limit=10';
+      
+      // Use contractor-specific feed for contractors
+      if (userRole === 'contractor' && contractorId) {
+        url = `http://localhost:3001/api/contractor/${contractorId}/feed?limit=10`;
+      } else if (userRole === 'homeowner') {
+        url = 'http://localhost:3001/api/events?limit=10&audience=homeowner';
+      }
+      
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setEvents(data.events || []);

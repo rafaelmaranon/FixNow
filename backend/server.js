@@ -315,8 +315,8 @@ const generateCoordinates = (address) => {
   return { lat, lng };
 };
 
-// Agent collaboration helpers
-function addEvent(agent, action, jobId, details = {}) {
+// Agent collaboration helpers with audience support
+function addEvent(agent, action, jobId, details = {}, audience = 'both') {
   const event = {
     id: `event-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     timestamp: new Date().toISOString(),
@@ -324,13 +324,15 @@ function addEvent(agent, action, jobId, details = {}) {
     action,
     jobId,
     details,
+    audience, // 'homeowner' | 'contractor' | 'both'
+    contractorId: details.contractorId || null,
     message: `${agent} ${action}${jobId ? ` for Job #${jobId}` : ''}`
   };
   
   events.unshift(event); // Add to beginning
   events = events.slice(0, 50); // Keep last 50 events
   
-  console.log(`📢 Event: ${event.message}`);
+  console.log(`📢 Event: ${event.message} (audience: ${audience})`);
   return event;
 }
 
@@ -417,21 +419,24 @@ app.post('/api/jobs', (req, res) => {
   
   // Multi-Agent Collaboration Flow
   // 1. Homeowner Agent publishes job
-  addEvent('Homeowner Agent', 'published job', jobId, { category, price: newJob.price });
+  addEvent('Homeowner Agent', 'published job', jobId, { category, price: newJob.price }, 'homeowner');
   
   // 2. Dispatcher Agent receives and broadcasts
   setTimeout(() => {
-    addEvent('Dispatcher Agent', 'sent RFO (Request for Offers)', jobId, { contractors: 2 });
+    addEvent('Dispatcher Agent', 'sent RFO (Request for Offers)', jobId, { contractors: 2 }, 'both');
     
     // 3. Contractor Agents respond with offers
     const jobOffers = generateContractorOffers(newJob);
-    addEvent('Contractor Agent', 'generated offers', jobId, { count: jobOffers.length });
+    addEvent('Contractor Agent', 'generated offers', jobId, { 
+      count: jobOffers.length,
+      contractorId: 'contractor-fast'
+    }, 'contractor');
     
     // 4. Dispatcher Agent collects offers
     setTimeout(() => {
       addEvent('Dispatcher Agent', 'collected offers', jobId, { 
         offers: jobOffers.map(o => ({ contractor: o.contractorName, price: o.price, eta: o.eta }))
-      });
+      }, 'both');
     }, 1000);
   }, 500);
   
@@ -657,10 +662,36 @@ app.post('/api/analyze-image', (req, res) => {
 // Get events (for agent activity ticker)
 app.get('/api/events', (req, res) => {
   const limit = parseInt(req.query.limit) || 20;
+  const audience = req.query.audience || 'both';
+  
+  let filteredEvents = events;
+  if (audience !== 'both') {
+    filteredEvents = events.filter(event => 
+      event.audience === audience || event.audience === 'both'
+    );
+  }
+  
   res.json({
     success: true,
-    events: events.slice(0, limit),
-    count: events.length
+    events: filteredEvents.slice(0, limit),
+    count: filteredEvents.length
+  });
+});
+
+// Get contractor-specific agent feed
+app.get('/api/contractor/:contractorId/feed', (req, res) => {
+  const { contractorId } = req.params;
+  const limit = parseInt(req.query.limit) || 20;
+  
+  const contractorEvents = events.filter(event => 
+    (event.audience === 'contractor' || event.audience === 'both') &&
+    (event.contractorId === contractorId || !event.contractorId)
+  );
+  
+  res.json({
+    success: true,
+    events: contractorEvents.slice(0, limit),
+    count: contractorEvents.length
   });
 });
 
@@ -726,7 +757,7 @@ app.post('/api/offers/:id/accept', (req, res) => {
     contractor: offer.contractorName, 
     price: offer.price, 
     eta: offer.eta 
-  });
+  }, 'homeowner');
   
   setTimeout(() => {
     const arrivalTime = arrival.toLocaleTimeString('en-US', { 
@@ -739,8 +770,9 @@ app.post('/api/offers/:id/accept', (req, res) => {
       contractor: offer.contractorName,
       eta: `~${etaMin} min`,
       arrivalBy: arrivalTime,
+      contractorId: offer.contractorId,
       message: `Job awarded to ${offer.contractorName} — ETA ~${etaMin} min, arriving by ${arrivalTime}`
-    });
+    }, 'contractor');
   }, 500);
   
   res.json({
@@ -818,21 +850,24 @@ app.post('/api/drafts/:id/publish', (req, res) => {
   
   // Multi-Agent Collaboration Flow
   // 1. Homeowner Agent publishes job
-  addEvent('Homeowner Agent', 'published job', jobId, { category: newJob.category, price: newJob.price });
+  addEvent('Homeowner Agent', 'published job', jobId, { category: newJob.category, price: newJob.price }, 'homeowner');
   
   // 2. Dispatcher Agent receives and broadcasts
   setTimeout(() => {
-    addEvent('Dispatcher Agent', 'sent RFO (Request for Offers)', jobId, { contractors: 2 });
+    addEvent('Dispatcher Agent', 'sent RFO (Request for Offers)', jobId, { contractors: 2 }, 'both');
     
     // 3. Contractor Agents respond with offers
     const jobOffers = generateContractorOffers(newJob);
-    addEvent('Contractor Agent', 'generated offers', jobId, { count: jobOffers.length });
+    addEvent('Contractor Agent', 'generated offers', jobId, { 
+      count: jobOffers.length,
+      contractorId: 'contractor-fast'
+    }, 'contractor');
     
     // 4. Dispatcher Agent collects offers
     setTimeout(() => {
       addEvent('Dispatcher Agent', 'collected offers', jobId, { 
         offers: jobOffers.map(o => ({ contractor: o.contractorName, price: o.price, eta: o.eta }))
-      });
+      }, 'both');
     }, 1000);
   }, 500);
   
