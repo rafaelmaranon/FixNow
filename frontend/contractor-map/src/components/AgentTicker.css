@@ -59,21 +59,21 @@
 
 .ticker-title {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.ticker-icon {
-  font-size: 1.1rem;
-}
-
-.event-count {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 0.1rem 0.4rem;
-  border-radius: 8px;
   font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+  text-align: center;
+}
+
+.agent-fallback-badge {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: linear-gradient(135deg, #ffa502 0%, #ff6348 100%);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+  text-align: center;
 }
 
 .ticker-minimize {
@@ -203,14 +203,6 @@
   align-items: center;
   gap: 0.25rem;
   font-size: 0.7rem;
-  color: #666;
-  font-weight: 500;
-}
-
-.legend-icon {
-  font-size: 0.9rem;
-}
-
 /* Responsive design */
 @media (max-width: 768px) {
   .agent-ticker {
@@ -241,4 +233,54 @@
 
 .ticker-events::-webkit-scrollbar-thumb:hover {
   background: rgba(102, 126, 234, 0.7);
+}
+
+/* Agent Mode Badges */
+.agent-mode-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.agent-mode-badge.raindrop {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+}
+
+.agent-mode-badge.inkeep {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.agent-mode-badge.mock {
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.agent-status-badge {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+  text-align: center;
+}
+
+.agent-fallback-badge {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: linear-gradient(135deg, #ffa502 0%, #ff6348 100%);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+  text-align: center;
 }

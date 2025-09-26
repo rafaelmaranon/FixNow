@@ -140,11 +140,28 @@ const AgentTicker: React.FC<AgentTickerProps> = ({ userRole = 'homeowner', contr
                 </div>
                 <div className="event-message">
                   {agentEvent.message}
+                  {agentEvent.details && agentEvent.details.mode && (
+                    <span className={`agent-mode-badge ${agentEvent.details.mode}`}>
+                      {agentEvent.details.mode === 'raindrop' && '🌧️ Raindrop'}
+                      {agentEvent.details.mode === 'inkeep' && '🤖 Inkeep'}
+                      {agentEvent.details.mode === 'mock' && '🎭 Mock'}
+                    </span>
+                  )}
                 </div>
                 {agentEvent.details && agentEvent.details.price && (
                   <div className="event-price">
                     💰 ${agentEvent.details.price}
                     {agentEvent.details.eta && ` • ⏱️ ${agentEvent.details.eta}`}
+                  </div>
+                )}
+                {agentEvent.action === 'dispatcher_mode' && (
+                  <div className="agent-status-badge">
+                    📡 Powered by {agentEvent.details.mode?.charAt(0).toUpperCase() + agentEvent.details.mode?.slice(1)} AI
+                  </div>
+                )}
+                {agentEvent.action === 'dispatcher_fallback' && (
+                  <div className="agent-fallback-badge">
+                    ⚠️ Using fallback system
                   </div>
                 )}
               </div>
