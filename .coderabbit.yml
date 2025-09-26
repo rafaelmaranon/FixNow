@@ -1,26 +1,15 @@
 version: 1
-
 project:
   name: FixNow
   monorepo: true
-
 review:
-  block_on: []   # keep empty for hackathon; we don't want the bot to block merges
+  block_on: []
   focus:
     - title: "Multi-Agent Event Integrity"
       guidelines: |
         Each event must include: type, actor, jobId, audience (homeowner|contractor|both),
-        and contractorId when relevant. Use a single emitter (addEvent) and avoid branches
+        and contractorId when relevant. Use a single emitter (pushEvent) and avoid branches
         that skip emission.
-    - title: "API Contract Consistency"
-      guidelines: |
-        Validate shared types (Job, Offer, Booking) are updated together across
-        backend and frontend. Flag mismatched field names and unchecked any casts.
-    - title: "Async Safety"
-      guidelines: |
-        Look for race conditions in Publish -> RFO -> Offer -> Select -> Award flow.
-        Flag non-atomic updates and missing idempotency on offer selection.
-
 checks:
   secrets_exposed:
     enabled: true
