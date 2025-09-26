@@ -132,7 +132,7 @@ function App() {
           <p className="tagline">Urgent repairs, booked in minutes.</p>
           <div className="inkeep-badge">
             <span className="badge-text">Powered by</span>
-            <span className="inkeep-logo">🤖 Inkeep Agent Framework</span>
+            <span className="inkeep-logo">🤖 Inkeep+RainDrop</span>
           </div>
         </div>
         
