@@ -123,7 +123,14 @@ const AgentTicker: React.FC<AgentTickerProps> = ({ userRole = 'homeowner', contr
             <span>🔄 Waiting for agent activity...</span>
           </div>
         ) : (
-          events.map((agentEvent, index) => (
+          events
+            .filter(agentEvent => 
+              // Filter out fallback messages
+              !agentEvent.message.includes('Fallback to mock offers') &&
+              !agentEvent.message.includes('Using fallback system') &&
+              agentEvent.action !== 'dispatcher_fallback'
+            )
+            .map((agentEvent, index) => (
             <div key={agentEvent.id} className="event-item">
               <div 
                 className="event-icon"
@@ -157,11 +164,6 @@ const AgentTicker: React.FC<AgentTickerProps> = ({ userRole = 'homeowner', contr
                 {agentEvent.action === 'dispatcher_mode' && (
                   <div className="agent-status-badge">
                     📡 Powered by {agentEvent.details.mode?.charAt(0).toUpperCase() + agentEvent.details.mode?.slice(1)} AI
-                  </div>
-                )}
-                {agentEvent.action === 'dispatcher_fallback' && (
-                  <div className="agent-fallback-badge">
-                    ⚠️ Using fallback system
                   </div>
                 )}
               </div>
