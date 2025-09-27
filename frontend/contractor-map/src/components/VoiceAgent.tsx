@@ -403,6 +403,39 @@ ${result.analysis.risk_notes}`;
   };
 
   const handleAcceptOffer = async (offer: any) => {
+    const IS_DEMO = window.location.hostname.endsWith('github.io') || process.env.REACT_APP_DEMO === '1';
+    
+    console.log('🎯 Accepting offer:', offer.contractorName, 'Demo mode:', IS_DEMO);
+    
+    if (IS_DEMO) {
+      // Demo mode: simulate booking confirmation
+      const mockBooking = {
+        id: Date.now().toString(),
+        contractorName: offer.contractorName,
+        contractorPhone: '(415) 555-0123',
+        price: offer.price,
+        eta: offer.eta,
+        status: 'confirmed',
+        arrivalTime: new Date(Date.now() + 30 * 60000).toISOString(), // 30 minutes from now
+        jobAddress: '123 Marina Blvd, San Francisco, CA',
+        createdAt: new Date().toISOString()
+      };
+      
+      setBooking(mockBooking);
+      setAgentResponse(`🎉 Booking confirmed! ${offer.contractorName} is on the way. They'll arrive in ${offer.eta}. You can track their progress and contact them if needed.`);
+      setShowOffers(false);
+      setOffers([]);
+      
+      // Refresh jobs to show updated status
+      if (onJobPublished) {
+        onJobPublished();
+      }
+      
+      console.log('✅ Demo booking created:', mockBooking);
+      return;
+    }
+
+    // Real API mode
     try {
       const response = await fetch(`http://localhost:3001/api/offers/${offer.id}/accept`, {
         method: 'POST',
