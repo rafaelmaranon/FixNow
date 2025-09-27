@@ -7,7 +7,8 @@ import NeighborhoodFilter from './components/NeighborhoodFilter';
 import AgentTicker from './components/AgentTicker';
 import { Job } from './data/mockJobs';
 import { jobsApi } from './services/api';
-import { createApiUrl } from './config/api';
+import { createApiUrl, isDemoMode } from './config/api';
+import { mockJobs, mockContractors } from './services/mockData';
 
 type UserRole = 'homeowner' | 'contractor';
 
@@ -22,13 +23,21 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [newJobNotification, setNewJobNotification] = useState<string | null>(null);
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('all');
-  const [filterMode, setFilterMode] = useState<'strict' | 'loose'>('strict');
   const [contractorId] = useState<string>('contractor-fast'); // Fixed contractor ID for demo
+  const [filterMode, setFilterMode] = useState<'strict' | 'loose'>('strict'); // Filter mode for contractors
 
   // Fetch jobs from API
   const fetchJobs = async () => {
     try {
-      if (isLoading) return; // Prevent multiple simultaneous calls
+      setError(null);
+      
+      // Use demo mode in production
+      if (isDemoMode()) {
+        console.log(' Demo mode: Using mock jobs data');
+        setJobs(mockJobs);
+        setFilteredJobs(mockJobs);
+        return;
+      }
       
       const fetchedJobs = await jobsApi.getJobs();
       setJobs(fetchedJobs);
@@ -43,6 +52,23 @@ function App() {
   // Fetch contractors from backend API
   const fetchContractors = async (neighborhood = 'all', mode = 'strict') => {
     try {
+      // Use demo mode in production
+      if (isDemoMode()) {
+        console.log('🎭 Demo mode: Using mock contractors data');
+        let contractorsData = mockContractors;
+        
+        // Filter by neighborhood if specified
+        if (neighborhood !== 'all') {
+          contractorsData = contractorsData.filter((contractor: any) => 
+            contractor.address.toLowerCase().includes(neighborhood.toLowerCase())
+          );
+        }
+        
+        setContractors(contractorsData);
+        console.log(`✅ Loaded ${contractorsData.length} contractors from demo data (${neighborhood}, ${mode})`);
+        return;
+      }
+      
       const response = await fetch(createApiUrl('/contractors'));
       if (response.ok) {
         const result = await response.json();
@@ -60,7 +86,8 @@ function App() {
       }
     } catch (err) {
       console.error('Failed to fetch contractors:', err);
-      // Keep empty array on error
+      // Fallback to demo data on error
+      setContractors(mockContractors);
     }
   };
 
