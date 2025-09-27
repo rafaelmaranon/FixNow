@@ -21,9 +21,10 @@ export const createApiUrl = (endpoint: string): string => {
   return `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 };
 
-// Demo mode detection
+// Demo mode detection - force demo mode for GitHub Pages
 export const isDemoMode = (): boolean => {
-  return process.env.NODE_ENV === 'production' && !process.env.REACT_APP_API_URL;
+  // Always use demo mode in production (GitHub Pages)
+  return process.env.NODE_ENV === 'production' || window.location.hostname.includes('github.io');
 };
 
 // Helper function for API calls with fallback to demo mode

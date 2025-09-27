@@ -16,15 +16,20 @@ type UserRole = 'homeowner' | 'contractor';
 
 function App() {
   const [userRole, setUserRole] = useState<UserRole>('homeowner');
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
-  const [contractors, setContractors] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [jobs, setJobs] = useState<Job[]>(isDemoMode() ? mockJobs : []);
+  const [filteredJobs, setFilteredJobs] = useState<Job[]>(isDemoMode() ? mockJobs : []);
+  const [contractors, setContractors] = useState<any[]>(isDemoMode() ? mockContractors : []);
+  const [isLoading, setIsLoading] = useState(!isDemoMode());
   const [error, setError] = useState<string | null>(null);
   const [newJobNotification, setNewJobNotification] = useState<string | null>(null);
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('all');
   const [contractorId] = useState<string>('contractor-fast'); // Fixed contractor ID for demo
   const [filterMode, setFilterMode] = useState<'strict' | 'loose'>('strict'); // Filter mode for contractors
+
+  // Log demo mode status immediately
+  console.log('🎭 Demo mode status:', isDemoMode());
+  console.log('Environment:', process.env.NODE_ENV);
+  console.log('Hostname:', window.location.hostname);
 
   // Fetch jobs from API
   const fetchJobs = async () => {
@@ -33,7 +38,9 @@ function App() {
       
       // Use demo mode in production
       if (isDemoMode()) {
-        console.log(' Demo mode: Using mock jobs data');
+        console.log('🎭 Demo mode detected: Using mock jobs data');
+        console.log('Environment:', process.env.NODE_ENV);
+        console.log('Hostname:', window.location.hostname);
         setJobs(mockJobs);
         setFilteredJobs(mockJobs);
         return;
