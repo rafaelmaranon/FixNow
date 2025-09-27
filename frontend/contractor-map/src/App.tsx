@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import MapView from './components/MapView';
 import VoiceAgent from './components/VoiceAgent';
@@ -7,29 +7,29 @@ import NeighborhoodFilter from './components/NeighborhoodFilter';
 import AgentTicker from './components/AgentTicker';
 import { Job } from './data/mockJobs';
 import { jobsApi } from './services/api';
-import { createApiUrl, isDemoMode } from './config/api';
+import { createApiUrl } from './config/api';
 import { mockJobs, mockContractors } from './services/mockData';
 
 type UserRole = 'homeowner' | 'contractor';
 
-// Live contractor data will be fetched from Craigslist service
+// Bulletproof demo mode detection
+const IS_PAGES = window.location.hostname.endsWith('github.io');
+const IS_DEMO = IS_PAGES || process.env.REACT_APP_DEMO === '1';
 
 function App() {
   const [userRole, setUserRole] = useState<UserRole>('homeowner');
-  const [jobs, setJobs] = useState<Job[]>(isDemoMode() ? mockJobs : []);
-  const [filteredJobs, setFilteredJobs] = useState<Job[]>(isDemoMode() ? mockJobs : []);
-  const [contractors, setContractors] = useState<any[]>(isDemoMode() ? mockContractors : []);
-  const [isLoading, setIsLoading] = useState(!isDemoMode());
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
+  const [contractors, setContractors] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newJobNotification, setNewJobNotification] = useState<string | null>(null);
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('all');
   const [contractorId] = useState<string>('contractor-fast'); // Fixed contractor ID for demo
   const [filterMode, setFilterMode] = useState<'strict' | 'loose'>('strict'); // Filter mode for contractors
 
-  // Log demo mode status immediately
-  console.log('🎭 Demo mode status:', isDemoMode());
-  console.log('Environment:', process.env.NODE_ENV);
-  console.log('Hostname:', window.location.hostname);
+  // One-shot initialization
+  const didInit = useRef(false);
 
   // Fetch jobs from API
   const fetchJobs = async () => {
@@ -37,10 +37,8 @@ function App() {
       setError(null);
       
       // Use demo mode in production
-      if (isDemoMode()) {
+      if (IS_DEMO) {
         console.log('🎭 Demo mode detected: Using mock jobs data');
-        console.log('Environment:', process.env.NODE_ENV);
-        console.log('Hostname:', window.location.hostname);
         setJobs(mockJobs);
         setFilteredJobs(mockJobs);
         return;
@@ -60,7 +58,7 @@ function App() {
   const fetchContractors = async (neighborhood = 'all', mode = 'strict') => {
     try {
       // Use demo mode in production
-      if (isDemoMode()) {
+      if (IS_DEMO) {
         console.log('🎭 Demo mode: Using mock contractors data');
         let contractorsData = mockContractors;
         
@@ -98,24 +96,39 @@ function App() {
     }
   };
 
-  // Initial load
+  // One-shot initialization
   useEffect(() => {
-    const initialLoad = async () => {
-      if (isDemoMode()) {
-        console.log('🧪 Demo mode: true');
-        console.log('🎭 DEMO MODE: Loading mock data');
+    if (didInit.current) return;
+    didInit.current = true;
+
+    console.log('🧪 Demo mode:', IS_DEMO, 'host:', window.location.hostname);
+
+    if (IS_DEMO) {
+      setJobs(mockJobs);
+      setContractors(mockContractors);
+      setFilteredJobs(mockJobs);
+      setIsLoading(false);
+      return; // Skip API entirely
+    }
+
+    (async () => {
+      try {
+        setIsLoading(true);
+        const [jobsResp, contractorsResp] = await Promise.all([
+          jobsApi.getJobs(),
+          fetchContractors(selectedNeighborhood, filterMode)
+        ]);
+        setJobs(jobsResp);
+        setFilteredJobs(jobsResp);
+      } catch (e) {
+        console.error('API failed, falling back to mock:', e);
         setJobs(mockJobs);
         setContractors(mockContractors);
+        setFilteredJobs(mockJobs);
+      } finally {
         setIsLoading(false);
-        return;
       }
-      
-      setIsLoading(true);
-      await Promise.all([fetchJobs(), fetchContractors(selectedNeighborhood, filterMode)]);
-      setIsLoading(false);
-    };
-    
-    initialLoad();
+    })();
   }, []);
 
   // Fetch contractors when switching to homeowner view or filters change

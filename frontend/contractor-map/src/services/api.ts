@@ -12,9 +12,8 @@ export interface ApiResponse<T> {
 
 export const jobsApi = {
   async getJobs(): Promise<Job[]> {
-    // Use mock data in demo mode
-    if (isDemoMode()) {
-      await simulateApiDelay();
+    // Bulletproof demo mode detection
+    if (window.location.hostname.endsWith('github.io')) {
       return mockApiResponses.jobs.data;
     }
 
@@ -33,9 +32,8 @@ export const jobsApi = {
   },
 
   async createJob(jobData: Partial<Job>): Promise<Job> {
-    // Use mock data in demo mode
-    if (isDemoMode()) {
-      await simulateApiDelay();
+    // Bulletproof demo mode detection
+    if (window.location.hostname.endsWith('github.io')) {
       const newJob: Job = {
         id: Date.now().toString(),
         category: jobData.category || 'General',
@@ -76,7 +74,7 @@ export const jobsApi = {
 
   // Health check
   async healthCheck(): Promise<boolean> {
-    if (isDemoMode()) {
+    if (window.location.hostname.endsWith('github.io')) {
       return true;
     }
 
