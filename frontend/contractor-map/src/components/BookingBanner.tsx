@@ -37,11 +37,16 @@ function useCountdown(toIso: string) {
 
 const BookingBanner: React.FC<BookingBannerProps> = ({ booking, onViewDetails, onContact }) => {
   const countdown = useCountdown(booking.arrivalByIso);
-  const arrivalTime = new Date(booking.arrivalByIso).toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
+  
+  const dt = new Date(booking.arrivalByIso);
+  const isValid = !Number.isNaN(dt.getTime());
+  const arrivalTime = isValid
+    ? dt.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      })
+    : "";
 
   return (
     <div className="booking-banner">

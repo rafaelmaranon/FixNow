@@ -408,53 +408,36 @@ ${result.analysis.risk_notes}`;
     console.log('🎯 Accepting offer:', offer.contractorName, 'Demo mode:', IS_DEMO);
     
     if (IS_DEMO) {
-      try {
-        // Demo mode: simulate booking confirmation
-        const now = new Date();
-        const arrivalTime = new Date(now.getTime() + 30 * 60000); // 30 minutes from now
-        
-        console.log('🕐 Current time:', now.toISOString());
-        console.log('🕐 Arrival time:', arrivalTime.toISOString());
-        
-        const mockBooking = {
-          id: Date.now().toString(),
-          jobId: 'job-' + Date.now(),
-          contractorId: offer.id || 'contractor-' + Date.now(),
-          contractorName: offer.contractorName,
-          phone: '(415) 555-0123',
-          price: offer.price,
-          etaMin: 30, // 30 minutes
-          arrivalByIso: arrivalTime.toISOString(),
-          windowMin: 15,
-          status: 'confirmed',
-          jobAddress: '123 Marina Blvd, San Francisco, CA',
-          createdAt: now.toISOString()
-        };
-        
-        console.log('📋 Setting booking:', mockBooking);
-        console.log('📅 Arrival time check:', new Date(mockBooking.arrivalByIso));
-        setBooking(mockBooking);
-        
-        console.log('💬 Setting response message');
-        setAgentResponse(`🎉 Booking confirmed! ${offer.contractorName} is on the way. They'll arrive in ${offer.eta}. You can track their progress and contact them if needed.`);
-        
-        console.log('🚫 Hiding offers');
-        setShowOffers(false);
-        setOffers([]);
-        
-        // Refresh jobs to show updated status
-        if (onJobPublished) {
-          console.log('🔄 Calling onJobPublished');
-          onJobPublished();
-        }
-        
-        console.log('✅ Demo booking created successfully');
-        return;
-      } catch (error) {
-        console.error('❌ Error in demo booking:', error);
-        setAgentResponse("Sorry, there was an issue confirming your booking. Please try again.");
-        return;
+      const etaMin = 30;         // minutes until arrival
+      const windowMin = 15;      // arrival window
+      const price = offer.price ?? 150;
+
+      const arrivalByIso = new Date(Date.now() + etaMin * 60_000).toISOString();
+
+      const booking = {
+        id: `demo-booking-${Date.now()}`,
+        jobId: currentDraft?.id ?? "demo-job",
+        contractorId: offer.id ?? `demo-${offer.contractorName.replace(/\s+/g,'-').toLowerCase()}`,
+        contractorName: offer.contractorName,
+        phone: offer.phone ?? "(415) 555-0123",
+        price,
+        etaMin,        // ✅ number
+        windowMin,     // ✅ number
+        arrivalByIso,  // ✅ ISO string
+        status: "confirmed"
+      };
+
+      setBooking(booking);
+      setShowOffers(false);
+      setOffers([]);
+      setAgentResponse(`✅ Booked ${offer.contractorName}. Arriving in ~${etaMin} min.`);
+      
+      // Refresh jobs to show updated status
+      if (onJobPublished) {
+        onJobPublished();
       }
+      
+      return;
     }
 
     // Real API mode
@@ -608,7 +591,6 @@ ${result.analysis.risk_notes}`;
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      console.log('🖱️ Button clicked for:', offer.contractorName);
                       handleAcceptOffer(offer);
                     }}
                     type="button"
