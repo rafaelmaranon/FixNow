@@ -1,6 +1,6 @@
 import { Job } from '../data/mockJobs';
-
-const API_BASE_URL = 'http://localhost:3001/api';
+import { API_BASE_URL, isDemoMode } from '../config/api';
+import { mockApiResponses, simulateApiDelay } from './mockData';
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -11,29 +11,48 @@ export interface ApiResponse<T> {
 }
 
 export const jobsApi = {
-  // Get all jobs
-  getJobs: async (): Promise<Job[]> => {
+  async getJobs(): Promise<Job[]> {
+    // Use mock data in demo mode
+    if (isDemoMode()) {
+      await simulateApiDelay();
+      return mockApiResponses.jobs.data;
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/jobs`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const result: ApiResponse<Job[]> = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch jobs');
-      }
-      
-      console.log('✅ Fetched jobs from API:', result.data.length, 'jobs');
       return result.data;
     } catch (error) {
-      console.error('❌ Error fetching jobs:', error);
-      throw error;
+      console.error('Failed to fetch jobs, using mock data:', error);
+      // Fallback to mock data if API fails
+      return mockApiResponses.jobs.data;
     }
   },
 
-  // Create a new job
-  createJob: async (jobData: Omit<Job, 'id' | 'createdAt' | 'status' | 'lat' | 'lng'>): Promise<Job> => {
+  async createJob(jobData: Partial<Job>): Promise<Job> {
+    // Use mock data in demo mode
+    if (isDemoMode()) {
+      await simulateApiDelay();
+      const newJob: Job = {
+        id: Date.now().toString(),
+        category: jobData.category || 'General',
+        address: jobData.address || '123 Demo St, San Francisco, CA',
+        lat: 37.7749,
+        lng: -122.4194,
+        price: jobData.price || 200,
+        urgency: jobData.urgency || 'medium',
+        description: jobData.description || 'Demo job',
+        customerName: jobData.customerName || 'Demo User',
+        phone: jobData.phone || '(415) 555-DEMO',
+        createdAt: new Date().toISOString(),
+        status: 'open'
+      };
+      return newJob;
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/jobs`, {
         method: 'POST',
@@ -42,27 +61,25 @@ export const jobsApi = {
         },
         body: JSON.stringify(jobData),
       });
-
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
-      const result: ApiResponse<Job> = await response.json();
       
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to create job');
-      }
-
-      console.log('✅ Created new job via API:', result.data);
+      const result: ApiResponse<Job> = await response.json();
       return result.data;
     } catch (error) {
-      console.error('❌ Error creating job:', error);
+      console.error('Failed to create job:', error);
       throw error;
     }
   },
 
   // Health check
-  healthCheck: async (): Promise<boolean> => {
+  async healthCheck(): Promise<boolean> {
+    if (isDemoMode()) {
+      return true;
+    }
+
     try {
       const response = await fetch(`${API_BASE_URL}/health`);
       const result = await response.json();

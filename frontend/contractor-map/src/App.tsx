@@ -7,6 +7,7 @@ import NeighborhoodFilter from './components/NeighborhoodFilter';
 import AgentTicker from './components/AgentTicker';
 import { Job } from './data/mockJobs';
 import { jobsApi } from './services/api';
+import { createApiUrl } from './config/api';
 
 type UserRole = 'homeowner' | 'contractor';
 
@@ -42,7 +43,7 @@ function App() {
   // Fetch contractors from backend API
   const fetchContractors = async (neighborhood = 'all', mode = 'strict') => {
     try {
-      const response = await fetch('http://localhost:3001/api/contractors');
+      const response = await fetch(createApiUrl('/contractors'));
       if (response.ok) {
         const result = await response.json();
         let contractorsData = result.data || [];
