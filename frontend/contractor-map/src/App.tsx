@@ -39,20 +39,23 @@ function App() {
     }
   };
 
-  // Fetch contractors from Craigslist service
+  // Fetch contractors from backend API
   const fetchContractors = async (neighborhood = 'all', mode = 'strict') => {
     try {
-      const params = new URLSearchParams({
-        limit: '20',
-        neighborhood,
-        mode
-      });
-      
-      const response = await fetch(`http://localhost:3004/contractors/sf?${params}`);
+      const response = await fetch('http://localhost:3001/api/contractors');
       if (response.ok) {
         const result = await response.json();
-        setContractors(result.contractors || []);
-        console.log(`✅ Loaded ${result.contractors?.length || 0} contractors from Craigslist (${neighborhood}, ${mode})`);
+        let contractorsData = result.data || [];
+        
+        // Filter by neighborhood if specified
+        if (neighborhood !== 'all') {
+          contractorsData = contractorsData.filter((contractor: any) => 
+            contractor.address.toLowerCase().includes(neighborhood.toLowerCase())
+          );
+        }
+        
+        setContractors(contractorsData);
+        console.log(`✅ Loaded ${contractorsData.length} contractors from backend API (${neighborhood}, ${mode})`);
       }
     } catch (err) {
       console.error('Failed to fetch contractors:', err);
@@ -302,14 +305,14 @@ function App() {
               <div className="map-container">
                 {userRole === 'homeowner' ? (
                   <MapView 
-                    jobs={[]} 
+                    jobs={filteredJobs} 
                     contractors={contractors}
-                    viewMode="contractors"
+                    viewMode="jobs"
                   />
                 ) : (
                   <MapView 
                     jobs={filteredJobs} 
-                    contractors={[]}
+                    contractors={contractors}
                     viewMode="jobs"
                   />
                 )}

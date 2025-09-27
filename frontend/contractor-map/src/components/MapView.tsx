@@ -275,7 +275,7 @@ const MapView: React.FC<MapViewProps> = ({ jobs, contractors = [], viewMode = 'j
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
-        {viewMode === 'jobs' && jobs.map((job) => (
+        {jobs.map((job) => (
           <Marker
             key={job.id}
             position={[job.lat, job.lng]}
@@ -332,7 +332,7 @@ const MapView: React.FC<MapViewProps> = ({ jobs, contractors = [], viewMode = 'j
           </Marker>
         ))}
 
-        {viewMode === 'contractors' && contractors.map((contractor) => (
+        {contractors.map((contractor) => (
           <Marker
             key={contractor.id}
             position={[contractor.lat, contractor.lng]}
