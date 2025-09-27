@@ -410,7 +410,12 @@ ${result.analysis.risk_notes}`;
     if (IS_DEMO) {
       try {
         // Demo mode: simulate booking confirmation
-        const arrivalTimeMs = Date.now() + 30 * 60000; // 30 minutes from now
+        const now = new Date();
+        const arrivalTime = new Date(now.getTime() + 30 * 60000); // 30 minutes from now
+        
+        console.log('🕐 Current time:', now.toISOString());
+        console.log('🕐 Arrival time:', arrivalTime.toISOString());
+        
         const mockBooking = {
           id: Date.now().toString(),
           jobId: 'job-' + Date.now(),
@@ -419,14 +424,15 @@ ${result.analysis.risk_notes}`;
           phone: '(415) 555-0123',
           price: offer.price,
           etaMin: 30, // 30 minutes
-          arrivalByIso: new Date(arrivalTimeMs).toISOString(),
+          arrivalByIso: arrivalTime.toISOString(),
           windowMin: 15,
           status: 'confirmed',
           jobAddress: '123 Marina Blvd, San Francisco, CA',
-          createdAt: new Date().toISOString()
+          createdAt: now.toISOString()
         };
         
         console.log('📋 Setting booking:', mockBooking);
+        console.log('📅 Arrival time check:', new Date(mockBooking.arrivalByIso));
         setBooking(mockBooking);
         
         console.log('💬 Setting response message');
