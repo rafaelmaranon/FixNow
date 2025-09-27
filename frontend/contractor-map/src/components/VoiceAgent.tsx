@@ -39,6 +39,21 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({ userRole, onVoiceCommand, onPho
   };
 
   const createDraft = async (userInput: string) => {
+    const IS_DEMO = window.location.hostname.endsWith('github.io') || process.env.REACT_APP_DEMO === '1';
+    
+    if (IS_DEMO) {
+      // Mock draft for demo mode
+      const mockDraft = {
+        id: Date.now().toString(),
+        userInput,
+        category: userInput.toLowerCase().includes('leak') ? 'Plumbing' : 
+                 userInput.toLowerCase().includes('electrical') ? 'Electrical' : 'General',
+        createdAt: new Date().toISOString()
+      };
+      setCurrentDraft(mockDraft);
+      return mockDraft;
+    }
+    
     try {
       const response = await fetch('http://localhost:3001/api/drafts', {
         method: 'POST',
@@ -169,26 +184,60 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({ userRole, onVoiceCommand, onPho
         onPhotoUpload(file);
       }
       
-      // Trigger image analysis if we have a draft
-      if (currentDraft) {
-        setIsAgentSpeaking(true);
-        setAgentResponse("Analyzing your photo...");
-        
-        try {
-          const response = await fetch('http://localhost:3001/api/analyze-image', {
+      // Demo mode: simulate photo analysis without API calls
+      const IS_DEMO = window.location.hostname.endsWith('github.io') || process.env.REACT_APP_DEMO === '1';
+      
+      setIsAgentSpeaking(true);
+      setAgentResponse("Analyzing your photo...");
+      
+      // Simulate analysis delay
+      setTimeout(() => {
+        if (IS_DEMO) {
+          // Mock analysis for demo mode
+          const mockAnalysis = {
+            suspected_issue: "loose pipe connection",
+            confidence: 0.85,
+            possible_causes: ["worn gasket", "loose fitting", "mineral buildup"],
+            common_fixes: [
+              { name: "Tighten connection", est: [120, 180], time_min: 30 },
+              { name: "Replace gasket", est: [150, 220], time_min: 45 }
+            ],
+            local_price_band: "SF typical range: $150-$250",
+            risk_notes: "Minor issue, no safety concerns",
+            questions: ["Is it dripping constantly?", "When did it start?", "Any water damage?"]
+          };
+          
+          setAnalysis(mockAnalysis);
+          
+          const analysisResponse = `Great! I can see this is likely a ${mockAnalysis.suspected_issue} (${Math.round(mockAnalysis.confidence * 100)}% confidence).
+
+**What I see:** ${mockAnalysis.possible_causes.join(', ')}
+
+**Common fixes:**
+${mockAnalysis.common_fixes.map((fix: any) => `• ${fix.name}: $${fix.est[0]}-${fix.est[1]} (~${fix.time_min}min)`).join('\n')}
+
+**${mockAnalysis.local_price_band}**
+
+${mockAnalysis.risk_notes}`;
+          
+          setAgentResponse(analysisResponse);
+          setQuickQuestions(mockAnalysis.questions.slice(0, 3));
+          setShowPublishButton(true);
+          setIsAgentSpeaking(false);
+        } else {
+          // Real API mode
+          fetch('http://localhost:3001/api/analyze-image', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              draftId: currentDraft.id,
+              draftId: currentDraft?.id,
               imageUrl: imageUrl,
-              context: `${currentDraft.category} ${transcript} home repair plumbing leak under sink SF`
+              context: `${currentDraft?.category || 'General'} ${transcript} home repair plumbing leak under sink SF`
             })
-          });
-          
-          if (response.ok) {
-            const result = await response.json();
+          })
+          .then(response => response.ok ? response.json() : Promise.reject())
+          .then(result => {
             setAnalysis(result.analysis);
-            
             const analysisResponse = `Great! I can see this is likely a ${result.analysis.suspected_issue} (${Math.round(result.analysis.confidence * 100)}% confidence).
 
 **What I see:** ${result.analysis.possible_causes.join(', ')}
@@ -203,15 +252,17 @@ ${result.analysis.risk_notes}`;
             setAgentResponse(analysisResponse);
             setQuickQuestions(result.analysis.questions.slice(0, 3));
             setShowPublishButton(true);
-          }
-        } catch (error) {
-          console.error('Image analysis failed:', error);
-          setAgentResponse("I can see your photo! Based on what you described, this looks like a plumbing issue that typically costs $180-$350 in SF. Ready to find contractors?");
-          setShowPublishButton(true);
+          })
+          .catch(error => {
+            console.error('Image analysis failed:', error);
+            setAgentResponse("I can see your photo! Based on what you described, this looks like a plumbing issue that typically costs $180-$350 in SF. Ready to find contractors?");
+            setShowPublishButton(true);
+          })
+          .finally(() => {
+            setIsAgentSpeaking(false);
+          });
         }
-        
-        setIsAgentSpeaking(false);
-      }
+      }, 2000); // 2 second delay for realistic analysis
     }
   };
 
@@ -221,6 +272,53 @@ ${result.analysis.risk_notes}`;
       return;
     }
 
+    const IS_DEMO = window.location.hostname.endsWith('github.io') || process.env.REACT_APP_DEMO === '1';
+
+    if (IS_DEMO) {
+      // Demo mode: simulate job publishing
+      setAgentResponse("✅ Job published! Watch the agent activity - Dispatcher is now sending requests to contractors...");
+      setShowPublishButton(false);
+      
+      // Simulate multi-agent collaboration with mock offers
+      setTimeout(() => {
+        const mockOffers = [
+          {
+            id: 'offer-1',
+            contractorName: 'Bay Area Plumbing Pro',
+            rating: 4.8,
+            price: 180,
+            eta: '30-45 min',
+            type: 'fast',
+            message: 'I can fix this quickly! Have all parts in my truck.'
+          },
+          {
+            id: 'offer-2', 
+            contractorName: 'SF Budget Repairs',
+            rating: 4.5,
+            price: 150,
+            eta: '2-3 hours',
+            type: 'budget',
+            message: 'Great price, quality work. Available this afternoon.'
+          }
+        ];
+        
+        setOffers(mockOffers);
+        setShowOffers(true);
+        setAgentResponse(`Great! I received ${mockOffers.length} offers from contractors. Here are your options:`);
+      }, 3000);
+      
+      setCurrentDraft(null);
+      setAnalysis(null);
+      setQuickQuestions([]);
+      
+      // Notify parent component to refresh jobs
+      if (onJobPublished) {
+        onJobPublished();
+      }
+      return;
+    }
+
+    // Real API mode
     try {
       // Update draft with final details if we have analysis
       if (analysis) {

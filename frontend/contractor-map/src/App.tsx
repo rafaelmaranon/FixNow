@@ -104,6 +104,7 @@ function App() {
     console.log('🧪 Demo mode:', IS_DEMO, 'host:', window.location.hostname);
 
     if (IS_DEMO) {
+      console.log('🎭 Loading mock data for demo mode');
       setJobs(mockJobs);
       setContractors(mockContractors);
       setFilteredJobs(mockJobs);
@@ -111,15 +112,16 @@ function App() {
       return; // Skip API entirely
     }
 
-    (async () => {
+    // Real API mode
+    const loadData = async () => {
       try {
         setIsLoading(true);
-        const [jobsResp, contractorsResp] = await Promise.all([
-          jobsApi.getJobs(),
-          fetchContractors(selectedNeighborhood, filterMode)
-        ]);
+        const jobsResp = await jobsApi.getJobs();
         setJobs(jobsResp);
         setFilteredJobs(jobsResp);
+        
+        // Fetch contractors
+        fetchContractors(selectedNeighborhood, filterMode);
       } catch (e) {
         console.error('API failed, falling back to mock:', e);
         setJobs(mockJobs);
@@ -128,7 +130,9 @@ function App() {
       } finally {
         setIsLoading(false);
       }
-    })();
+    };
+    
+    loadData();
   }, []);
 
   // Fetch contractors when switching to homeowner view or filters change
