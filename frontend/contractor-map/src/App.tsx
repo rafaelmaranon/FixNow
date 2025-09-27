@@ -101,6 +101,15 @@ function App() {
   // Initial load
   useEffect(() => {
     const initialLoad = async () => {
+      if (isDemoMode()) {
+        console.log('🧪 Demo mode: true');
+        console.log('🎭 DEMO MODE: Loading mock data');
+        setJobs(mockJobs);
+        setContractors(mockContractors);
+        setIsLoading(false);
+        return;
+      }
+      
       setIsLoading(true);
       await Promise.all([fetchJobs(), fetchContractors(selectedNeighborhood, filterMode)]);
       setIsLoading(false);
