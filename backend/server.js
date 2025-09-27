@@ -919,19 +919,23 @@ app.post('/api/jobs', (req, res) => {
   setTimeout(() => {
     addEvent('Dispatcher Agent', 'sent RFO (Request for Offers)', jobId, { contractors: 2 }, 'both');
     
-    // 3. Contractor Agents respond with offers
-    const jobOffers = generateContractorOffers(newJob);
-    addEvent('Contractor Agent', 'generated offers', jobId, { 
-      count: jobOffers.length,
-      contractorId: 'contractor-fast'
-    }, 'contractor');
-    
-    // 4. Dispatcher Agent collects offers
-    setTimeout(() => {
-      addEvent('Dispatcher Agent', 'collected offers', jobId, { 
-        offers: jobOffers.map(o => ({ contractor: o.contractorName, price: o.price, eta: o.eta }))
-      }, 'both');
-    }, 1000);
+    // 3. Contractor Agents respond with offers (using real agent integration)
+    generateContractorOffersWithAgent(newJob).then(jobOffers => {
+      addEvent('Contractor Agent', 'generated offers', jobId, { 
+        count: jobOffers.length,
+        contractorId: 'contractor-fast'
+      }, 'contractor');
+      
+      // Store offers for later acceptance
+      offers.push(...jobOffers);
+      
+      // 4. Dispatcher Agent collects offers
+      setTimeout(() => {
+        addEvent('Dispatcher Agent', 'collected offers', jobId, { 
+          offers: jobOffers.map(o => ({ contractor: o.contractorName, price: o.price, eta: o.eta }))
+        }, 'both');
+      }, 1000);
+    });
   }, 500);
   
   // Fix any existing jobs with bad coordinates
