@@ -408,31 +408,43 @@ ${result.analysis.risk_notes}`;
     console.log('🎯 Accepting offer:', offer.contractorName, 'Demo mode:', IS_DEMO);
     
     if (IS_DEMO) {
-      // Demo mode: simulate booking confirmation
-      const mockBooking = {
-        id: Date.now().toString(),
-        contractorName: offer.contractorName,
-        contractorPhone: '(415) 555-0123',
-        price: offer.price,
-        eta: offer.eta,
-        status: 'confirmed',
-        arrivalTime: new Date(Date.now() + 30 * 60000).toISOString(), // 30 minutes from now
-        jobAddress: '123 Marina Blvd, San Francisco, CA',
-        createdAt: new Date().toISOString()
-      };
-      
-      setBooking(mockBooking);
-      setAgentResponse(`🎉 Booking confirmed! ${offer.contractorName} is on the way. They'll arrive in ${offer.eta}. You can track their progress and contact them if needed.`);
-      setShowOffers(false);
-      setOffers([]);
-      
-      // Refresh jobs to show updated status
-      if (onJobPublished) {
-        onJobPublished();
+      try {
+        // Demo mode: simulate booking confirmation
+        const mockBooking = {
+          id: Date.now().toString(),
+          contractorName: offer.contractorName,
+          phone: '(415) 555-0123',
+          price: offer.price,
+          eta: offer.eta,
+          status: 'confirmed',
+          arrivalTime: new Date(Date.now() + 30 * 60000).toISOString(), // 30 minutes from now
+          jobAddress: '123 Marina Blvd, San Francisco, CA',
+          createdAt: new Date().toISOString()
+        };
+        
+        console.log('📋 Setting booking:', mockBooking);
+        setBooking(mockBooking);
+        
+        console.log('💬 Setting response message');
+        setAgentResponse(`🎉 Booking confirmed! ${offer.contractorName} is on the way. They'll arrive in ${offer.eta}. You can track their progress and contact them if needed.`);
+        
+        console.log('🚫 Hiding offers');
+        setShowOffers(false);
+        setOffers([]);
+        
+        // Refresh jobs to show updated status
+        if (onJobPublished) {
+          console.log('🔄 Calling onJobPublished');
+          onJobPublished();
+        }
+        
+        console.log('✅ Demo booking created successfully');
+        return;
+      } catch (error) {
+        console.error('❌ Error in demo booking:', error);
+        setAgentResponse("Sorry, there was an issue confirming your booking. Please try again.");
+        return;
       }
-      
-      console.log('✅ Demo booking created:', mockBooking);
-      return;
     }
 
     // Real API mode
@@ -583,7 +595,10 @@ ${result.analysis.risk_notes}`;
                   
                   <button 
                     className="accept-offer-btn"
-                    onClick={() => handleAcceptOffer(offer)}
+                    onClick={() => {
+                      console.log('🖱️ Button clicked for:', offer.contractorName);
+                      handleAcceptOffer(offer);
+                    }}
                   >
                     ✅ Select This Contractor
                   </button>
