@@ -410,14 +410,18 @@ ${result.analysis.risk_notes}`;
     if (IS_DEMO) {
       try {
         // Demo mode: simulate booking confirmation
+        const arrivalTimeMs = Date.now() + 30 * 60000; // 30 minutes from now
         const mockBooking = {
           id: Date.now().toString(),
+          jobId: 'job-' + Date.now(),
+          contractorId: offer.id || 'contractor-' + Date.now(),
           contractorName: offer.contractorName,
           phone: '(415) 555-0123',
           price: offer.price,
-          eta: offer.eta,
+          etaMin: 30, // 30 minutes
+          arrivalByIso: new Date(arrivalTimeMs).toISOString(),
+          windowMin: 15,
           status: 'confirmed',
-          arrivalTime: new Date(Date.now() + 30 * 60000).toISOString(), // 30 minutes from now
           jobAddress: '123 Marina Blvd, San Francisco, CA',
           createdAt: new Date().toISOString()
         };
@@ -599,15 +603,9 @@ ${result.analysis.risk_notes}`;
                       e.preventDefault();
                       e.stopPropagation();
                       console.log('🖱️ Button clicked for:', offer.contractorName);
-                      alert(`Clicked: ${offer.contractorName}`);
                       handleAcceptOffer(offer);
                     }}
                     type="button"
-                    style={{
-                      pointerEvents: 'auto',
-                      zIndex: 1000,
-                      position: 'relative'
-                    }}
                   >
                     ✅ Select This Contractor
                   </button>
