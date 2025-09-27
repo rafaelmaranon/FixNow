@@ -595,9 +595,18 @@ ${result.analysis.risk_notes}`;
                   
                   <button 
                     className="accept-offer-btn"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       console.log('🖱️ Button clicked for:', offer.contractorName);
+                      alert(`Clicked: ${offer.contractorName}`);
                       handleAcceptOffer(offer);
+                    }}
+                    type="button"
+                    style={{
+                      pointerEvents: 'auto',
+                      zIndex: 1000,
+                      position: 'relative'
                     }}
                   >
                     ✅ Select This Contractor
