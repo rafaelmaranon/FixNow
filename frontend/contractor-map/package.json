@@ -1,6 +1,7 @@
 {
   "name": "contractor-map",
   "version": "1.0.0",
+  "homepage": "https://rafaelmaranon.github.io/FixNow",
   "main": "index.js",
   "scripts": {
     "start": "react-scripts start",
