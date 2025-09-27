@@ -7,7 +7,7 @@
 
 - **Point to header**: "FixNow ⚡ Urgent repairs, booked in minutes"
 - **Show role switcher**: "One app, two experiences - Homeowner and Contractor"
-- **Point to Inkeep badge**: "Powered by Inkeep+RainDrop with 3 specialized AI agents"
+- **Point to Inkeep badge**: "Powered by Inkeep+RainDrop+CodeRabbit with 3 specialized AI agents"
 
 ---
 
@@ -90,7 +90,7 @@
 
 - **Backend**: Express.js with REST APIs (GET/POST /api/jobs, /api/hold, /api/dispatch)
 - **Frontend**: React + TypeScript + Leaflet maps + Web Speech API
-- **AI**: Inkeep+RainDrop with 3 specialized agents
+- **AI**: Inkeep+RainDrop+CodeRabbit with 3 specialized agents
 - **Data**: Real-time job filtering, contractor matching, price optimization
 - **UX**: Voice-first interface, photo uploads, real-time map updates
 

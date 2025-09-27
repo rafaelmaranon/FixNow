@@ -75,7 +75,7 @@
 - **Explain**: "Homeowner Agent → problem analysis"
 - **Show**: "Dispatcher Agent → coordination and negotiation"
 - **Point out**: "Contractor Agent → bidding and optimization"
-- **Emphasize**: "Built on enterprise Inkeep+RainDrop agent framework"
+- **Emphasize**: "Built on enterprise Inkeep+RainDrop+CodeRabbit agent framework"
 
 ---
 

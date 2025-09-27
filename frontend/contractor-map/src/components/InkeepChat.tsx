@@ -101,7 +101,7 @@ const InkeepChat: React.FC = () => {
           <div className="chat-header">
             <div className="header-info">
               <h3>🤖 AI Contractor Dispatcher</h3>
-              <span className="powered-by">Powered by Inkeep+RainDrop</span>
+              <span className="powered-by">Powered by Inkeep+RainDrop+CodeRabbit</span>
             </div>
             <div className="agent-status">
               <div className="agent-indicator active">
