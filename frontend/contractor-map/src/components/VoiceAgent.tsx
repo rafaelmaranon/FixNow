@@ -41,15 +41,18 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({ userRole, onVoiceCommand, onPho
   const createDraft = async (userInput: string) => {
     const IS_DEMO = window.location.hostname.endsWith('github.io') || process.env.REACT_APP_DEMO === '1';
     
+    console.log('📝 Creating draft, demo mode:', IS_DEMO);
+    
     if (IS_DEMO) {
       // Mock draft for demo mode
       const mockDraft = {
         id: Date.now().toString(),
         userInput,
-        category: userInput.toLowerCase().includes('leak') ? 'Plumbing' : 
+        category: userInput.toLowerCase().includes('leak') || userInput.toLowerCase().includes('sink') ? 'Plumbing' : 
                  userInput.toLowerCase().includes('electrical') ? 'Electrical' : 'General',
         createdAt: new Date().toISOString()
       };
+      console.log('✅ Mock draft created:', mockDraft);
       setCurrentDraft(mockDraft);
       return mockDraft;
     }
@@ -77,6 +80,7 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({ userRole, onVoiceCommand, onPho
   };
 
   const simulateAgentResponse = async (userInput: string) => {
+    console.log('🎭 Agent responding to:', userInput);
     setIsAgentSpeaking(true);
     
     // Simulate thinking delay
@@ -86,22 +90,32 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({ userRole, onVoiceCommand, onPho
     const lowerInput = userInput.toLowerCase();
     
     if (userRole === 'homeowner') {
+      console.log('🏠 Homeowner mode, current draft:', currentDraft);
+      
       // Create or update draft if this is the first input or a follow-up
       if (!currentDraft) {
+        console.log('📝 Creating draft for:', userInput);
         await createDraft(userInput);
       }
       
-      if (lowerInput.includes('leak') || lowerInput.includes('pipe') || lowerInput.includes('water')) {
+      if (lowerInput.includes('leak') || lowerInput.includes('pipe') || lowerInput.includes('water') || lowerInput.includes('sink')) {
         response = "I see you have a plumbing issue. Let me analyze this for you.\n\nFor water leaks, typical costs in SF range from $150-$400. Can you upload a photo so I can give you a more specific diagnosis and price estimate?";
         setQuickQuestions(['Upload photo first', 'Skip photo, continue', 'What affects the price?']);
         setShowPublishButton(true); // Enable publish after problem description
+        console.log('✅ Publish button enabled for plumbing');
       } else if (lowerInput.includes('electrical') || lowerInput.includes('outlet') || lowerInput.includes('power')) {
         response = "Electrical work requires a licensed professional. Based on similar jobs, expect $120-$300 for outlet repairs.\n\nCan you upload a photo of the outlet or describe what's not working?";
         setQuickQuestions(['Upload photo', 'No power at all', 'Outlet sparking', 'GFCI tripped']);
         setShowPublishButton(true); // Enable publish after problem description
+        console.log('✅ Publish button enabled for electrical');
+      } else if (lowerInput.includes('skip') || lowerInput.includes('continue')) {
+        response = "Perfect! I have enough information to help you find contractors. Your plumbing issue should cost around $150-$400 in SF. Ready to publish your job and get offers?";
+        setQuickQuestions(['Yes, publish job', 'Tell me more about pricing', 'What happens next?']);
+        setShowPublishButton(true);
+        console.log('✅ Publish button enabled for skip/continue');
       } else if (lowerInput.includes('price') || lowerInput.includes('cost') || lowerInput.includes('fair')) {
         if (analysis) {
-          response = `Based on your ${analysis.suspected_issue}, here's what's typical in SF:\n\n${analysis.common_fixes.map((fix: any) => `• ${fix.name}: $${fix.est[0]}-${fix.est[1]} (${fix.time_min}min, ${fix.parts})`).join('\n')}\n\n${analysis.local_price_band}`;
+          response = `Based on your ${analysis.suspected_issue}, here's what's typical in SF:\n\n${analysis.common_fixes.map((fix: any) => `• ${fix.name}: $${fix.est[0]}-${fix.est[1]} (${fix.time_min}min)`).join('\n')}\n\n${analysis.local_price_band}`;
         } else {
           response = "I need more details about your specific issue to give accurate pricing. Can you describe the problem or upload a photo?";
         }
@@ -111,7 +125,11 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({ userRole, onVoiceCommand, onPho
         if (analysis) {
           response = `Got it! Based on that detail, I'm more confident this is a ${analysis.suspected_issue}.\n\n${analysis.common_fixes[0].name} would likely cost $${analysis.common_fixes[0].est[0]}-${analysis.common_fixes[0].est[1]}.\n\nReady to find contractors?`;
           setShowPublishButton(true);
+        } else {
+          response = "Thanks for that detail! Based on what you've described, I can help you find the right contractor. Ready to publish your job?";
+          setShowPublishButton(true);
         }
+        console.log('✅ Publish button enabled for follow-up');
       } else {
         response = "I understand you need repair help. Can you describe the specific problem? For example: 'My kitchen sink is leaking' or 'The bathroom outlet stopped working'. This helps me find the right specialist and estimate fair pricing.";
         setQuickQuestions(['Kitchen sink leak', 'Bathroom outlet issue', 'Something else']);
@@ -132,6 +150,8 @@ const VoiceAgent: React.FC<VoiceAgentProps> = ({ userRole, onVoiceCommand, onPho
       }
     }
     
+    console.log('🤖 Agent response:', response);
+    console.log('🔘 Show publish button:', showPublishButton);
     setAgentResponse(response);
     setIsAgentSpeaking(false);
   };
